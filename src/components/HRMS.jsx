@@ -4,6 +4,7 @@ import { formatCR } from '../helpers';
 const HEADERS = [
   { key: 'id', label: '#', align: 'text-left' },
   { key: 'name', label: 'Name', align: 'text-left' },
+  { key: 'assignment', label: 'Assignment', align: 'text-left' },
   { key: 'salary', label: 'Salary (Annual)', align: 'text-right' },
   { key: 'salaryW', label: 'Salary (Weekly)', align: 'text-right' },
   { key: 'status', label: 'Status', align: 'text-left' },
@@ -13,6 +14,14 @@ const HEADERS = [
 export default function HRMS({ state }) {
   const [sortKey, setSortKey] = useState('id');
   const [sortAsc, setSortAsc] = useState(true);
+
+  const epicMap = useMemo(() => {
+    const map = {};
+    for (const epic of state.epics) {
+      map[epic.id] = epic;
+    }
+    return map;
+  }, [state.epics]);
 
   const handleSort = (key) => {
     const resolved = key === 'salaryW' ? 'salary' : key;
@@ -26,8 +35,14 @@ export default function HRMS({ state }) {
   const sorted = useMemo(() => {
     const arr = [...state.employees];
     arr.sort((a, b) => {
-      let va = a[sortKey],
+      let va, vb;
+      if (sortKey === 'assignment') {
+        va = a.assignedEpicId || '';
+        vb = b.assignedEpicId || '';
+      } else {
+        va = a[sortKey];
         vb = b[sortKey];
+      }
       if (typeof va === 'string') {
         va = va.toLowerCase();
         vb = vb.toLowerCase();
@@ -47,6 +62,15 @@ export default function HRMS({ state }) {
   const activeCount = state.employees.filter(
     (e) => e.status === 'Active'
   ).length;
+
+  function getAssignmentLabel(emp) {
+    if (!emp.assignedEpicId) return 'Unassigned';
+    const epic = epicMap[emp.assignedEpicId];
+    if (!epic) return 'Unassigned';
+    const product = state.products.find((p) => p.id === epic.productId);
+    const shortEpic = epic.name.length > 20 ? epic.name.slice(0, 18) + '...' : epic.name;
+    return `${product?.name || ''}: ${shortEpic}`;
+  }
 
   return (
     <div className="p-4 flex flex-col gap-2">
@@ -81,6 +105,11 @@ export default function HRMS({ state }) {
                 >
                   <td className="px-3 py-2 t-text-muted">{emp.id}</td>
                   <td className="px-3 py-2 t-text">{emp.name}</td>
+                  <td className="px-3 py-2">
+                    <span className={emp.assignedEpicId ? 'text-accent-blue' : 't-text-muted'}>
+                      {getAssignmentLabel(emp)}
+                    </span>
+                  </td>
                   <td className="px-3 py-2 text-right">
                     {formatCR(emp.salary)}
                   </td>
@@ -110,6 +139,7 @@ export default function HRMS({ state }) {
                 <td className="px-3 py-2 t-text">
                   Total ({activeCount} active)
                 </td>
+                <td className="px-3 py-2"></td>
                 <td className="px-3 py-2 text-right text-accent-cyan">
                   {formatCR(totalAnnual)}
                 </td>

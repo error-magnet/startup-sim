@@ -1,4 +1,5 @@
 import { formatCR } from '../helpers';
+import { weeksRemaining } from '../reducer';
 
 function MetricCard({ label, value, sub, color = 'var(--txt-primary)' }) {
   return (
@@ -33,6 +34,20 @@ export default function Dashboard({ state }) {
 
   const green = '#00d26a', red = '#ff4757', yellow = '#ffc048';
 
+  // Product status
+  const appify = state.products.find((p) => p.id === 'appify');
+  const appifyEpics = state.epics.filter((e) => e.productId === 'appify');
+  const mvpWeeksLeft =
+    appify?.status === 'Live'
+      ? 0
+      : Math.max(...appifyEpics.map((e) => weeksRemaining(e)));
+  const mvpLabel =
+    appify?.status === 'Live'
+      ? 'Shipped'
+      : mvpWeeksLeft === Infinity
+        ? 'Not staffed'
+        : `Est. ${mvpWeeksLeft} wks`;
+
   return (
     <div className="flex flex-col gap-4 p-4">
       {state.gameOver && (
@@ -43,7 +58,7 @@ export default function Dashboard({ state }) {
           </span>
         </div>
       )}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-5 gap-3">
         <MetricCard
           label="Bank Balance"
           value={formatCR(state.bank)}
@@ -64,6 +79,11 @@ export default function Dashboard({ state }) {
           label="Headcount"
           value={activeEmployees.length}
           sub={`${formatCR(activeEmployees.reduce((s, e) => s + e.salary, 0))}/yr total comp`}
+        />
+        <MetricCard
+          label={`Appify: ${appify?.status}`}
+          value={mvpLabel}
+          color={appify?.status === 'Live' ? green : mvpWeeksLeft === Infinity ? yellow : '#3b82f6'}
         />
       </div>
 

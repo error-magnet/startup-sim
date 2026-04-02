@@ -3,10 +3,12 @@ import { gameReducer, initialState } from './reducer';
 import Dashboard from './components/Dashboard';
 import HRMS from './components/HRMS';
 import BalanceSheet from './components/BalanceSheet';
+import Projects from './components/Projects';
 
 const TABS = [
   { key: 'dashboard', label: 'Dashboard' },
   { key: 'hrms', label: 'HRMS' },
+  { key: 'projects', label: 'Projects' },
   { key: 'balance', label: 'Balance Sheet' },
 ];
 
@@ -170,6 +172,7 @@ export default function App() {
       <div className="flex-1 overflow-y-auto">
         {state.activeTab === 'dashboard' && <Dashboard state={state} />}
         {state.activeTab === 'hrms' && <HRMS state={state} />}
+        {state.activeTab === 'projects' && <Projects state={state} dispatch={dispatch} />}
         {state.activeTab === 'balance' && <BalanceSheet state={state} />}
       </div>
     </div>
