@@ -175,6 +175,25 @@ export default function App() {
         {state.activeTab === 'projects' && <Projects state={state} dispatch={dispatch} />}
         {state.activeTab === 'balance' && <BalanceSheet state={state} />}
       </div>
+
+      {/* Game Over overlay */}
+      {state.gameOver && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.7)' }}>
+          <div className="t-bg-card t-border border p-8 max-w-md text-center flex flex-col gap-4">
+            <div className="text-accent-red font-mono text-2xl font-bold">BANKRUPT</div>
+            <div className="t-text-secondary text-sm font-mono">
+              {state.companyName} ran out of money at Year {state.year}, Week {state.week}.
+            </div>
+            <button
+              onClick={() => dispatch({ type: 'RESTART' })}
+              className="mt-2 px-6 py-2 font-mono text-sm font-semibold transition-colors"
+              style={{ background: '#00d26a', color: '#000' }}
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
