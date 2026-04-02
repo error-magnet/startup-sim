@@ -1,5 +1,5 @@
 import { formatCR } from '../helpers';
-import { weeksRemaining } from '../reducer';
+import { weeksRemaining, getProductUserStats } from '../reducer';
 
 function MetricCard({ label, value, sub, color = 'var(--txt-primary)' }) {
   return (
@@ -16,25 +16,49 @@ function MetricCard({ label, value, sub, color = 'var(--txt-primary)' }) {
 }
 
 export default function Dashboard({ state }) {
-  const activeEmployees = state.employees.filter(
-    (e) => e.status === 'Active'
-  );
-  const weeklyBurn = activeEmployees.reduce(
-    (sum, e) => sum + e.salary / 52,
-    0
-  );
-  const runwayWeeks =
-    weeklyBurn > 0 ? Math.floor(state.bank / weeklyBurn) : Infinity;
+  const activeEmployees = state.employees.filter((e) => e.status === 'Active');
+  const weeklyPayroll = activeEmployees.reduce((sum, e) => sum + e.salary / 52, 0);
+
+  // Total weekly burn including dev + infra
+  let weeklyDevCost = 0;
+  let weeklyInfra = 0;
+  let totalPayingAll = 0;
+  let totalActiveAll = 0;
+
+  for (const p of state.products) {
+    if (p.status === 'In Development') {
+      const anyInProgress = state.epics
+        .filter((e) => e.productId === p.id)
+        .some((e) => e.status === 'In Progress');
+      if (anyInProgress) weeklyDevCost += p.devCostPerWeek;
+    }
+    if (p.status === 'Live') {
+      const stats = getProductUserStats(p);
+      const cfg = p.revenueConfig;
+      weeklyInfra += cfg.infraBaseCost + stats.totalActive * cfg.infraCostPerUser;
+      totalPayingAll += stats.payingUsers;
+      totalActiveAll += stats.totalActive;
+    }
+  }
+
+  const weeklyBurn = weeklyPayroll + weeklyDevCost + weeklyInfra;
+  const weeklyRevenue = totalPayingAll > 0
+    ? state.products.reduce((s, p) => {
+        if (p.status !== 'Live') return s;
+        const stats = getProductUserStats(p);
+        return s + (stats.payingUsers * p.revenueConfig.monthlyPrice) / 4;
+      }, 0)
+    : 0;
+  const netWeekly = weeklyRevenue - weeklyBurn;
+  const effectiveBurn = Math.max(0, -netWeekly);
+
+  const runwayWeeks = effectiveBurn > 0 ? Math.floor(state.bank / effectiveBurn) : Infinity;
   const runwayMonths = Math.floor(runwayWeeks / 4);
   const runwayRemWeeks = runwayWeeks % 4;
-  const runwayStr =
-    runwayWeeks === Infinity
-      ? '∞'
-      : `${runwayMonths}mo ${runwayRemWeeks}wk`;
+  const runwayStr = runwayWeeks === Infinity ? '∞' : `${runwayMonths}mo ${runwayRemWeeks}wk`;
 
-  const green = '#00d26a', red = '#ff4757', yellow = '#ffc048';
+  const green = '#00d26a', red = '#ff4757', yellow = '#ffc048', blue = '#3b82f6';
 
-  // Product status
   const appify = state.products.find((p) => p.id === 'appify');
   const appifyEpics = state.epics.filter((e) => e.productId === 'appify');
   const mvpWeeksLeft =
@@ -48,17 +72,23 @@ export default function Dashboard({ state }) {
         ? 'Not staffed'
         : `Est. ${mvpWeeksLeft} wks`;
 
+  const mrr = totalPayingAll > 0
+    ? state.products.reduce((s, p) => {
+        if (p.status !== 'Live') return s;
+        return s + getProductUserStats(p).payingUsers * p.revenueConfig.monthlyPrice;
+      }, 0)
+    : 0;
+
   return (
     <div className="flex flex-col gap-4 p-4">
       {state.gameOver && (
         <div className="bg-accent-red/20 border border-accent-red rounded p-4 text-center">
           <span className="text-accent-red font-bold text-lg font-mono">
-            GAME OVER — Your startup ran out of money at Year {state.year},
-            Week {state.week}
+            GAME OVER — Your startup ran out of money at Year {state.year}, Week {state.week}
           </span>
         </div>
       )}
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-4 gap-3">
         <MetricCard
           label="Bank Balance"
           value={formatCR(state.bank)}
@@ -67,12 +97,13 @@ export default function Dashboard({ state }) {
         <MetricCard
           label="Runway"
           value={runwayStr}
+          sub={netWeekly >= 0 ? 'Net positive' : `${formatCR(effectiveBurn)}/wk net burn`}
           color={runwayWeeks < 26 ? red : runwayWeeks < 52 ? yellow : 'var(--txt-primary)'}
         />
         <MetricCard
           label="Weekly Burn"
           value={formatCR(weeklyBurn)}
-          sub={`${formatCR(weeklyBurn * 52)}/yr`}
+          sub={`Salaries ${formatCR(weeklyPayroll)}${weeklyDevCost ? ` + Dev ${formatCR(weeklyDevCost)}` : ''}${weeklyInfra ? ` + Infra ${formatCR(weeklyInfra)}` : ''}`}
           color={red}
         />
         <MetricCard
@@ -80,10 +111,30 @@ export default function Dashboard({ state }) {
           value={activeEmployees.length}
           sub={`${formatCR(activeEmployees.reduce((s, e) => s + e.salary, 0))}/yr total comp`}
         />
+      </div>
+      <div className="grid grid-cols-4 gap-3">
         <MetricCard
           label={`Appify: ${appify?.status}`}
           value={mvpLabel}
-          color={appify?.status === 'Live' ? green : mvpWeeksLeft === Infinity ? yellow : '#3b82f6'}
+          color={appify?.status === 'Live' ? green : mvpWeeksLeft === Infinity ? yellow : blue}
+        />
+        <MetricCard
+          label="MRR"
+          value={formatCR(mrr)}
+          sub={mrr > 0 ? `${formatCR(mrr / 4)}/wk` : null}
+          color={mrr > 0 ? green : 'var(--txt-muted)'}
+        />
+        <MetricCard
+          label="Active Users"
+          value={totalActiveAll}
+          sub={totalPayingAll > 0 ? `${totalPayingAll} paying` : null}
+          color={totalActiveAll > 0 ? blue : 'var(--txt-muted)'}
+        />
+        <MetricCard
+          label="Weekly Revenue"
+          value={formatCR(weeklyRevenue)}
+          sub={weeklyRevenue > 0 ? `Net: ${formatCR(netWeekly)}/wk` : null}
+          color={weeklyRevenue > 0 ? green : 'var(--txt-muted)'}
         />
       </div>
 
