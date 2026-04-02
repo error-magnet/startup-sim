@@ -111,6 +111,7 @@ export function gameReducer(state, action) {
       ].slice(0, 200);
 
       // Process epics
+      const freedEmployeeIds = new Set();
       let newEpics = state.epics.map((epic) => {
         if (epic.status === 'Complete') return epic;
         const headcount = epic.assignedEmployeeIds.length;
@@ -126,14 +127,23 @@ export function gameReducer(state, action) {
             year: newYear,
             message: `${epic.name} completed!`,
           });
+          epic.assignedEmployeeIds.forEach((id) => freedEmployeeIds.add(id));
         }
 
         return {
           ...epic,
           workCompleted: Math.min(newWorkCompleted, epic.totalWork),
           status: completed ? 'Complete' : 'In Progress',
+          assignedEmployeeIds: completed ? [] : epic.assignedEmployeeIds,
         };
       });
+
+      // Unassign employees from completed epics
+      let newEmployees = freedEmployeeIds.size > 0
+        ? state.employees.map((e) =>
+            freedEmployeeIds.has(e.id) ? { ...e, assignedEpicId: null } : e
+          )
+        : state.employees;
 
       // Check if all epics for a product are complete
       let newProducts = state.products.map((product) => {
@@ -166,6 +176,7 @@ export function gameReducer(state, action) {
         year: newYear,
         totalWeeks: state.totalWeeks + 1,
         bank: newBank,
+        employees: newEmployees,
         epics: newEpics,
         products: newProducts,
         yearlyExpenses: { ...state.yearlyExpenses, [newYear]: yearExpenses },
