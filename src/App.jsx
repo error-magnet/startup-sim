@@ -66,7 +66,7 @@ export default function App() {
     if (!state.paused && !state.gameOver) {
       intervalRef.current = setInterval(() => {
         dispatch({ type: 'TICK' });
-      }, 1000 / state.speed);
+      }, 5000 / state.speed);
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -105,7 +105,7 @@ export default function App() {
 
         <div className="flex items-center gap-3">
           {/* Time - prominent */}
-          <div className="font-mono text-lg flex items-center gap-1 mr-2">
+          <div className="font-mono text-lg flex items-center gap-1 mr-2 t-bg-cell px-3 py-1 t-border border">
             <span className="t-text-muted">Y</span>
             <span className="font-bold text-xl t-text">{state.year}</span>
             <span className="t-text-muted mx-1">|</span>
