@@ -46,10 +46,14 @@ function makeInitialProducts() {
       id: 'appify',
       name: 'Appify',
       type: 'SaaS',
+      phase: 'development', // 'development' | 'production'
       status: 'In Development',
       launchedWeek: null,
       devCostPerWeek: 2000,
       revenueConfig: makeDefaultRevenueConfig(),
+      // Production infra
+      infraEmployeeIds: [],
+      infraMinStaff: 2,
       cohorts: [],
       financials: {
         totalRevenue: 0,
@@ -95,7 +99,11 @@ function getProductUserStats(product) {
   return { trialUsers, payingUsers, totalActive: trialUsers + payingUsers };
 }
 
-export { effectiveWork, weeksRemaining, calcConversionRate, getProductUserStats };
+function isInfraOperational(product) {
+  return product.infraEmployeeIds.length >= product.infraMinStaff;
+}
+
+export { effectiveWork, weeksRemaining, calcConversionRate, getProductUserStats, isInfraOperational };
 
 const initialEmployees = generateInitialEmployees(10);
 const companyName = generateCompanyName();
@@ -128,6 +136,19 @@ export const initialState = {
   gameOver: false,
   activeTab: 'dashboard',
 };
+
+// Helper to remove an employee from all assignments (epics + product infra)
+function removeEmployeeFromAll(employeeId, epics, products) {
+  const newEpics = epics.map((e) => ({
+    ...e,
+    assignedEmployeeIds: e.assignedEmployeeIds.filter((id) => id !== employeeId),
+  }));
+  const newProducts = products.map((p) => ({
+    ...p,
+    infraEmployeeIds: p.infraEmployeeIds.filter((id) => id !== employeeId),
+  }));
+  return { epics: newEpics, products: newProducts };
+}
 
 export function gameReducer(state, action) {
   switch (action.type) {
@@ -162,8 +183,7 @@ export function gameReducer(state, action) {
 
       const newLog = [
         {
-          week: newWeek,
-          year: newYear,
+          week: newWeek, year: newYear,
           message: `Payroll processed — CR ${Math.round(weeklyPayroll).toLocaleString('en-US')} debited`,
         },
         ...state.log,
@@ -198,7 +218,7 @@ export function gameReducer(state, action) {
 
       let newEmployees = freedEmployeeIds.size > 0
         ? state.employees.map((e) =>
-            freedEmployeeIds.has(e.id) ? { ...e, assignedEpicId: null } : e
+            freedEmployeeIds.has(e.id) ? { ...e, assignment: null } : e
           )
         : state.employees;
 
@@ -206,123 +226,113 @@ export function gameReducer(state, action) {
       let newProducts = state.products.map((product) => {
         let p = { ...product, financials: { ...product.financials } };
 
-        // === In Development ===
-        if (p.status === 'In Development') {
+        // === Development phase ===
+        if (p.phase === 'development') {
           const productEpics = newEpics.filter((e) => e.productId === p.id);
           const anyInProgress = productEpics.some((e) => e.status === 'In Progress');
 
-          // Dev cost
           if (anyInProgress) {
             weekDevCosts += p.devCostPerWeek;
             bankDelta -= p.devCostPerWeek;
             p.financials.totalDevCost += p.devCostPerWeek;
           }
 
-          // Check if shipped
+          // Check if all epics done -> transition to production
           const allComplete = productEpics.every((e) => e.status === 'Complete');
           if (allComplete && productEpics.length > 0) {
+            p.phase = 'production';
             p.status = 'Live';
             p.launchedWeek = newTotalWeeks;
-            // First signup cohort arrives immediately
-            p.cohorts = [{
-              signupWeek: newTotalWeeks,
-              totalSignups: p.revenueConfig.signupsPerMonth,
-              status: 'trial',
-              payingUsers: 0,
-            }];
+            p.cohorts = [];
             newLog.unshift({
               week: newWeek, year: newYear,
-              message: `${p.name} launched! Free trial period begins. ${p.revenueConfig.signupsPerMonth} signups.`,
+              message: `${p.name} MVP Development complete! Production infrastructure now needs staffing.`,
             });
           }
           return p;
         }
 
-        // === Live ===
-        if (p.status === 'Live') {
+        // === Production phase ===
+        if (p.phase === 'production') {
           const cfg = p.revenueConfig;
-          const weeksSinceLaunch = newTotalWeeks - p.launchedWeek;
-          let newCohorts = p.cohorts.map((c) => ({ ...c }));
-          let monthlyNewSignups = 0;
-          let monthlyConverted = 0;
-          let monthlyChurned = 0;
+          const operational = p.infraEmployeeIds.length >= p.infraMinStaff;
 
-          // Monthly events (every 4 weeks since launch)
-          if (weeksSinceLaunch > 0 && weeksSinceLaunch % 4 === 0) {
-            const conversionRate = calcConversionRate(cfg);
-
-            // Convert trial cohorts that have been on trial for freeTrialWeeks
-            newCohorts = newCohorts.map((c) => {
-              if (c.status !== 'trial') return c;
-              const trialAge = newTotalWeeks - c.signupWeek;
-              if (trialAge >= cfg.freeTrialWeeks) {
-                const paying = Math.floor(c.totalSignups * conversionRate);
-                monthlyConverted += paying;
-                return { ...c, status: 'active', payingUsers: paying };
-              }
-              return c;
-            });
-
-            // Churn from paying users (oldest cohorts first)
-            let totalPaying = newCohorts.reduce(
-              (s, c) => s + (c.status === 'active' ? c.payingUsers : 0), 0
-            );
-            let toChurn = Math.floor(totalPaying * cfg.monthlyChurnRate);
-            monthlyChurned = toChurn;
-            for (let i = 0; i < newCohorts.length && toChurn > 0; i++) {
-              if (newCohorts[i].status === 'active' && newCohorts[i].payingUsers > 0) {
-                const remove = Math.min(toChurn, newCohorts[i].payingUsers);
-                newCohorts[i] = { ...newCohorts[i], payingUsers: newCohorts[i].payingUsers - remove };
-                toChurn -= remove;
-              }
-            }
-            // Remove dead cohorts
-            newCohorts = newCohorts.filter(
-              (c) => c.status === 'trial' || c.payingUsers > 0
-            );
-
-            // New signup cohort
-            monthlyNewSignups = cfg.signupsPerMonth;
-            newCohorts.push({
-              signupWeek: newTotalWeeks,
-              totalSignups: cfg.signupsPerMonth,
-              status: 'trial',
-              payingUsers: 0,
-            });
-
-            const totalPayingNow = newCohorts.reduce(
-              (s, c) => s + (c.status === 'active' ? c.payingUsers : 0), 0
-            );
-            const totalTrialNow = newCohorts.reduce(
-              (s, c) => s + (c.status === 'trial' ? c.totalSignups : 0), 0
-            );
-            newLog.unshift({
-              week: newWeek, year: newYear,
-              message: `${p.name}: ${monthlyNewSignups} new signups, ${monthlyConverted} converted, ${monthlyChurned} churned. Active: ${totalTrialNow + totalPayingNow}`,
-            });
-          }
-
-          p.cohorts = newCohorts;
-
-          // Weekly revenue from paying users
-          const totalPaying = newCohorts.reduce(
-            (s, c) => s + (c.status === 'active' ? c.payingUsers : 0), 0
-          );
-          const totalTrial = newCohorts.reduce(
-            (s, c) => s + (c.status === 'trial' ? c.totalSignups : 0), 0
-          );
-          const totalActive = totalPaying + totalTrial;
-
-          const revenue = (totalPaying * cfg.monthlyPrice) / 4;
-          weekSubRevenue += revenue;
-          bankDelta += revenue;
-          p.financials.totalRevenue += revenue;
-
-          // Infra cost
+          // Infra cost always applies once live
+          const totalActive = getProductUserStats(p).totalActive;
           const infra = cfg.infraBaseCost + totalActive * cfg.infraCostPerUser;
           weekInfraCosts += infra;
           bankDelta -= infra;
           p.financials.totalInfraCost += infra;
+
+          // Revenue & user funnel only if infra is operational
+          if (operational) {
+            const weeksSinceLaunch = newTotalWeeks - p.launchedWeek;
+            let newCohorts = p.cohorts.map((c) => ({ ...c }));
+
+            // Monthly events (every 4 weeks since launch)
+            if (weeksSinceLaunch > 0 && weeksSinceLaunch % 4 === 0) {
+              const conversionRate = calcConversionRate(cfg);
+              let monthlyConverted = 0;
+              let monthlyChurned = 0;
+
+              // Convert trial cohorts whose trial ended
+              newCohorts = newCohorts.map((c) => {
+                if (c.status !== 'trial') return c;
+                const trialAge = newTotalWeeks - c.signupWeek;
+                if (trialAge >= cfg.freeTrialWeeks) {
+                  const paying = Math.floor(c.totalSignups * conversionRate);
+                  monthlyConverted += paying;
+                  return { ...c, status: 'active', payingUsers: paying };
+                }
+                return c;
+              });
+
+              // Churn
+              let totalPaying = newCohorts.reduce(
+                (s, c) => s + (c.status === 'active' ? c.payingUsers : 0), 0
+              );
+              let toChurn = Math.floor(totalPaying * cfg.monthlyChurnRate);
+              monthlyChurned = toChurn;
+              for (let i = 0; i < newCohorts.length && toChurn > 0; i++) {
+                if (newCohorts[i].status === 'active' && newCohorts[i].payingUsers > 0) {
+                  const remove = Math.min(toChurn, newCohorts[i].payingUsers);
+                  newCohorts[i] = { ...newCohorts[i], payingUsers: newCohorts[i].payingUsers - remove };
+                  toChurn -= remove;
+                }
+              }
+              newCohorts = newCohorts.filter((c) => c.status === 'trial' || c.payingUsers > 0);
+
+              // New signups
+              const monthlyNewSignups = cfg.signupsPerMonth;
+              newCohorts.push({
+                signupWeek: newTotalWeeks,
+                totalSignups: monthlyNewSignups,
+                status: 'trial',
+                payingUsers: 0,
+              });
+
+              const stats = { paying: 0, trial: 0 };
+              for (const c of newCohorts) {
+                if (c.status === 'trial') stats.trial += c.totalSignups;
+                else stats.paying += c.payingUsers;
+              }
+              newLog.unshift({
+                week: newWeek, year: newYear,
+                message: `${p.name}: ${monthlyNewSignups} signups, ${monthlyConverted} converted, ${monthlyChurned} churned. Active: ${stats.trial + stats.paying}`,
+              });
+            }
+
+            p.cohorts = newCohorts;
+
+            // Weekly revenue
+            const totalPaying = p.cohorts.reduce(
+              (s, c) => s + (c.status === 'active' ? c.payingUsers : 0), 0
+            );
+            const revenue = (totalPaying * cfg.monthlyPrice) / 4;
+            weekSubRevenue += revenue;
+            bankDelta += revenue;
+            p.financials.totalRevenue += revenue;
+          }
         }
 
         return p;
@@ -352,11 +362,7 @@ export function gameReducer(state, action) {
         products: newProducts,
         yearlyExpenses: { ...state.yearlyExpenses, [newYear]: yearExp },
         yearlyRevenue: { ...state.yearlyRevenue, [newYear]: yearRev },
-        currentWeekExpenses: {
-          salaries: weeklyPayroll,
-          devCosts: weekDevCosts,
-          infraCosts: weekInfraCosts,
-        },
+        currentWeekExpenses: { salaries: weeklyPayroll, devCosts: weekDevCosts, infraCosts: weekInfraCosts },
         currentWeekRevenue: { subscriptions: weekSubRevenue },
         log: newLog,
         gameOver,
@@ -369,10 +375,10 @@ export function gameReducer(state, action) {
       const epic = state.epics.find((e) => e.id === epicId);
       if (!epic || epic.status === 'Complete') return state;
 
-      let newEpics = state.epics.map((e) => ({
-        ...e,
-        assignedEmployeeIds: e.assignedEmployeeIds.filter((id) => id !== employeeId),
-      }));
+      // Remove from everywhere first
+      let { epics: newEpics, products: newProducts } = removeEmployeeFromAll(employeeId, state.epics, state.products);
+
+      // Add to epic
       newEpics = newEpics.map((e) =>
         e.id === epicId
           ? {
@@ -384,7 +390,7 @@ export function gameReducer(state, action) {
       );
 
       const newEmployees = state.employees.map((emp) =>
-        emp.id === employeeId ? { ...emp, assignedEpicId: epicId } : emp
+        emp.id === employeeId ? { ...emp, assignment: epicId } : emp
       );
 
       const emp = state.employees.find((e) => e.id === employeeId);
@@ -393,29 +399,65 @@ export function gameReducer(state, action) {
         ...state.log,
       ].slice(0, 200);
 
-      return { ...state, epics: newEpics, employees: newEmployees, log: newLog };
+      return { ...state, epics: newEpics, products: newProducts, employees: newEmployees, log: newLog };
+    }
+
+    case 'ASSIGN_INFRA': {
+      const { employeeId, productId } = action;
+      const product = state.products.find((p) => p.id === productId);
+      if (!product || product.phase !== 'production') return state;
+
+      // Remove from everywhere first
+      let { epics: newEpics, products: newProducts } = removeEmployeeFromAll(employeeId, state.epics, state.products);
+
+      // Add to product infra
+      newProducts = newProducts.map((p) =>
+        p.id === productId
+          ? { ...p, infraEmployeeIds: [...p.infraEmployeeIds, employeeId] }
+          : p
+      );
+
+      const newEmployees = state.employees.map((emp) =>
+        emp.id === employeeId ? { ...emp, assignment: `${productId}-infra` } : emp
+      );
+
+      const emp = state.employees.find((e) => e.id === employeeId);
+      const newLog = [
+        { week: state.week, year: state.year, message: `${emp.name} assigned to ${product.name} Infrastructure` },
+        ...state.log,
+      ].slice(0, 200);
+
+      return { ...state, epics: newEpics, products: newProducts, employees: newEmployees, log: newLog };
     }
 
     case 'UNASSIGN_EMPLOYEE': {
       const { employeeId } = action;
       const emp = state.employees.find((e) => e.id === employeeId);
-      const oldEpic = state.epics.find((e) => e.id === emp?.assignedEpicId);
+      if (!emp) return state;
 
-      const newEpics = state.epics.map((e) => ({
-        ...e,
-        assignedEmployeeIds: e.assignedEmployeeIds.filter((id) => id !== employeeId),
-      }));
+      const oldAssignment = emp.assignment;
+      let label = 'their assignment';
+      if (oldAssignment) {
+        const epic = state.epics.find((e) => e.id === oldAssignment);
+        if (epic) label = epic.name;
+        else {
+          const product = state.products.find((p) => `${p.id}-infra` === oldAssignment);
+          if (product) label = `${product.name} Infrastructure`;
+        }
+      }
+
+      let { epics: newEpics, products: newProducts } = removeEmployeeFromAll(employeeId, state.epics, state.products);
 
       const newEmployees = state.employees.map((e) =>
-        e.id === employeeId ? { ...e, assignedEpicId: null } : e
+        e.id === employeeId ? { ...e, assignment: null } : e
       );
 
       const newLog = [
-        { week: state.week, year: state.year, message: `${emp.name} unassigned from ${oldEpic?.name || 'epic'}` },
+        { week: state.week, year: state.year, message: `${emp.name} unassigned from ${label}` },
         ...state.log,
       ].slice(0, 200);
 
-      return { ...state, epics: newEpics, employees: newEmployees, log: newLog };
+      return { ...state, epics: newEpics, products: newProducts, employees: newEmployees, log: newLog };
     }
 
     case 'SET_PRICE': {

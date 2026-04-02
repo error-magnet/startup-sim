@@ -53,7 +53,7 @@ export function generateInitialEmployees(count) {
       role: 'Unassigned',
       status: 'Active',
       joinedWeek: 1,
-      assignedEpicId: null,
+      assignment: null,
     });
   }
   return employees;

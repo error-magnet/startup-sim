@@ -4,11 +4,13 @@ import Dashboard from './components/Dashboard';
 import HRMS from './components/HRMS';
 import BalanceSheet from './components/BalanceSheet';
 import Projects from './components/Projects';
+import Growth from './components/Growth';
 
 const TABS = [
   { key: 'dashboard', label: 'Dashboard' },
   { key: 'hrms', label: 'HRMS' },
   { key: 'projects', label: 'Projects' },
+  { key: 'growth', label: 'Growth' },
   { key: 'balance', label: 'Balance Sheet' },
 ];
 
@@ -173,6 +175,7 @@ export default function App() {
         {state.activeTab === 'dashboard' && <Dashboard state={state} />}
         {state.activeTab === 'hrms' && <HRMS state={state} />}
         {state.activeTab === 'projects' && <Projects state={state} dispatch={dispatch} />}
+        {state.activeTab === 'growth' && <Growth state={state} dispatch={dispatch} />}
         {state.activeTab === 'balance' && <BalanceSheet state={state} />}
       </div>
 

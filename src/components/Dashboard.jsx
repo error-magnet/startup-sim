@@ -1,5 +1,5 @@
 import { formatCR } from '../helpers';
-import { weeksRemaining, getProductUserStats } from '../reducer';
+import { weeksRemaining, getProductUserStats, isInfraOperational } from '../reducer';
 
 function MetricCard({ label, value, sub, color = 'var(--txt-primary)' }) {
   return (
@@ -26,13 +26,13 @@ export default function Dashboard({ state }) {
   let totalActiveAll = 0;
 
   for (const p of state.products) {
-    if (p.status === 'In Development') {
+    if (p.phase === 'development') {
       const anyInProgress = state.epics
         .filter((e) => e.productId === p.id)
         .some((e) => e.status === 'In Progress');
       if (anyInProgress) weeklyDevCost += p.devCostPerWeek;
     }
-    if (p.status === 'Live') {
+    if (p.phase === 'production') {
       const stats = getProductUserStats(p);
       const cfg = p.revenueConfig;
       weeklyInfra += cfg.infraBaseCost + stats.totalActive * cfg.infraCostPerUser;
@@ -44,7 +44,7 @@ export default function Dashboard({ state }) {
   const weeklyBurn = weeklyPayroll + weeklyDevCost + weeklyInfra;
   const weeklyRevenue = totalPayingAll > 0
     ? state.products.reduce((s, p) => {
-        if (p.status !== 'Live') return s;
+        if (p.phase !== 'production') return s;
         const stats = getProductUserStats(p);
         return s + (stats.payingUsers * p.revenueConfig.monthlyPrice) / 4;
       }, 0)
@@ -62,19 +62,19 @@ export default function Dashboard({ state }) {
   const appify = state.products.find((p) => p.id === 'appify');
   const appifyEpics = state.epics.filter((e) => e.productId === 'appify');
   const mvpWeeksLeft =
-    appify?.status === 'Live'
+    appify?.phase === 'production'
       ? 0
       : Math.max(...appifyEpics.map((e) => weeksRemaining(e)));
   const mvpLabel =
-    appify?.status === 'Live'
-      ? 'Shipped'
+    appify?.phase === 'production'
+      ? (isInfraOperational(appify) ? 'Live' : 'Needs infra staff')
       : mvpWeeksLeft === Infinity
         ? 'Not staffed'
         : `Est. ${mvpWeeksLeft} wks`;
 
   const mrr = totalPayingAll > 0
     ? state.products.reduce((s, p) => {
-        if (p.status !== 'Live') return s;
+        if (p.phase !== 'production') return s;
         return s + getProductUserStats(p).payingUsers * p.revenueConfig.monthlyPrice;
       }, 0)
     : 0;
@@ -114,9 +114,9 @@ export default function Dashboard({ state }) {
       </div>
       <div className="grid grid-cols-4 gap-3">
         <MetricCard
-          label={`Appify: ${appify?.status}`}
+          label={`Appify: ${appify?.phase === 'production' ? 'Production' : 'Development'}`}
           value={mvpLabel}
-          color={appify?.status === 'Live' ? green : mvpWeeksLeft === Infinity ? yellow : blue}
+          color={appify?.phase === 'production' ? (isInfraOperational(appify) ? green : yellow) : mvpWeeksLeft === Infinity ? yellow : blue}
         />
         <MetricCard
           label="MRR"

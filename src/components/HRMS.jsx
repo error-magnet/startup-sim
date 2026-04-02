@@ -37,8 +37,8 @@ export default function HRMS({ state }) {
     arr.sort((a, b) => {
       let va, vb;
       if (sortKey === 'assignment') {
-        va = a.assignedEpicId || '';
-        vb = b.assignedEpicId || '';
+        va = a.assignment || '';
+        vb = b.assignment || '';
       } else {
         va = a[sortKey];
         vb = b[sortKey];
@@ -64,8 +64,15 @@ export default function HRMS({ state }) {
   ).length;
 
   function getAssignmentLabel(emp) {
-    if (!emp.assignedEpicId) return 'Unassigned';
-    const epic = epicMap[emp.assignedEpicId];
+    if (!emp.assignment) return 'Unassigned';
+    // Check if it's infra assignment (e.g. "appify-infra")
+    if (emp.assignment.endsWith('-infra')) {
+      const productId = emp.assignment.replace('-infra', '');
+      const product = state.products.find((p) => p.id === productId);
+      return `${product?.name || ''}: Infrastructure`;
+    }
+    // Otherwise it's an epic
+    const epic = epicMap[emp.assignment];
     if (!epic) return 'Unassigned';
     const product = state.products.find((p) => p.id === epic.productId);
     const shortEpic = epic.name.length > 20 ? epic.name.slice(0, 18) + '...' : epic.name;
@@ -106,7 +113,7 @@ export default function HRMS({ state }) {
                   <td className="px-3 py-2 t-text-muted">{emp.id}</td>
                   <td className="px-3 py-2 t-text">{emp.name}</td>
                   <td className="px-3 py-2">
-                    <span className={emp.assignedEpicId ? 'text-accent-blue' : 't-text-muted'}>
+                    <span className={emp.assignment ? 'text-accent-blue' : 't-text-muted'}>
                       {getAssignmentLabel(emp)}
                     </span>
                   </td>
