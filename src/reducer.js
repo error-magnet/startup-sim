@@ -1,6 +1,7 @@
-import { generateInitialEmployees } from './helpers';
+import { generateInitialEmployees, generateCompanyName } from './helpers';
 
 const initialEmployees = generateInitialEmployees(10);
+const companyName = generateCompanyName();
 
 export const initialState = {
   week: 1,
@@ -9,6 +10,8 @@ export const initialState = {
   paused: true,
   speed: 1,
   bank: 1_000_000,
+  companyName: `${companyName} Inc.`,
+  theme: 'dark',
   employees: initialEmployees,
   log: [{ week: 1, year: 1, message: 'Game started with 10 employees' }],
   yearlyExpenses: { 1: { salaries: 0 } },
@@ -87,6 +90,23 @@ export function gameReducer(state, action) {
       return { ...state, speed: action.speed };
     case 'SET_TAB':
       return { ...state, activeTab: action.tab };
+    case 'SET_COMPANY_NAME':
+      return { ...state, companyName: action.name };
+    case 'TOGGLE_THEME':
+      return { ...state, theme: state.theme === 'dark' ? 'light' : 'dark' };
+    case 'RESTART': {
+      const newEmployees = generateInitialEmployees(10);
+      const newName = generateCompanyName();
+      return {
+        ...initialState,
+        companyName: `${newName} Inc.`,
+        employees: newEmployees,
+        theme: state.theme,
+        log: [{ week: 1, year: 1, message: 'Game started with 10 employees' }],
+        yearlyExpenses: { 1: { salaries: 0 } },
+        yearlyRevenue: { 1: 0 },
+      };
+    }
     default:
       return state;
   }

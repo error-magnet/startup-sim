@@ -1,15 +1,15 @@
 import { formatCR } from '../helpers';
 
-function MetricCard({ label, value, sub, color = 'text-txt-primary' }) {
+function MetricCard({ label, value, sub, color = 'var(--txt-primary)' }) {
   return (
-    <div className="bg-bg-card border border-bg-border rounded p-4 flex flex-col gap-1">
-      <span className="text-xs text-txt-secondary uppercase tracking-wider">
+    <div className="t-bg-card t-border border rounded p-4 flex flex-col gap-1">
+      <span className="text-xs t-text-secondary uppercase tracking-wider">
         {label}
       </span>
-      <span className={`font-mono text-xl font-semibold ${color}`}>
+      <span className="font-mono text-xl font-semibold" style={{ color }}>
         {value}
       </span>
-      {sub && <span className="text-xs text-txt-muted font-mono">{sub}</span>}
+      {sub && <span className="text-xs t-text-muted font-mono">{sub}</span>}
     </div>
   );
 }
@@ -31,6 +31,8 @@ export default function Dashboard({ state }) {
       ? '∞'
       : `${runwayMonths}mo ${runwayRemWeeks}wk`;
 
+  const green = '#00d26a', red = '#ff4757', yellow = '#ffc048';
+
   return (
     <div className="flex flex-col gap-4 p-4">
       {state.gameOver && (
@@ -45,30 +47,18 @@ export default function Dashboard({ state }) {
         <MetricCard
           label="Bank Balance"
           value={formatCR(state.bank)}
-          color={
-            state.bank < 100000
-              ? 'text-accent-red'
-              : state.bank < 300000
-                ? 'text-accent-yellow'
-                : 'text-accent-green'
-          }
+          color={state.bank < 100000 ? red : state.bank < 300000 ? yellow : green}
         />
         <MetricCard
           label="Runway"
           value={runwayStr}
-          color={
-            runwayWeeks < 26
-              ? 'text-accent-red'
-              : runwayWeeks < 52
-                ? 'text-accent-yellow'
-                : 'text-txt-primary'
-          }
+          color={runwayWeeks < 26 ? red : runwayWeeks < 52 ? yellow : 'var(--txt-primary)'}
         />
         <MetricCard
           label="Weekly Burn"
           value={formatCR(weeklyBurn)}
           sub={`${formatCR(weeklyBurn * 52)}/yr`}
-          color="text-accent-red"
+          color={red}
         />
         <MetricCard
           label="Headcount"
@@ -77,9 +67,9 @@ export default function Dashboard({ state }) {
         />
       </div>
 
-      <div className="bg-bg-card border border-bg-border rounded flex flex-col flex-1 min-h-0">
-        <div className="px-4 py-2 border-b border-bg-border">
-          <span className="text-xs text-txt-secondary uppercase tracking-wider">
+      <div className="t-bg-card t-border border rounded flex flex-col flex-1 min-h-0">
+        <div className="px-4 py-2 t-border border-b">
+          <span className="text-xs t-text-secondary uppercase tracking-wider">
             Activity Log
           </span>
         </div>
@@ -88,13 +78,13 @@ export default function Dashboard({ state }) {
             <div
               key={i}
               className={`px-4 py-1.5 text-sm font-mono flex gap-3 ${
-                i % 2 === 0 ? 'bg-bg-cell' : ''
+                i % 2 === 0 ? 't-bg-cell' : ''
               } ${entry.message.includes('GAME OVER') ? 'text-accent-red font-bold' : ''}`}
             >
-              <span className="text-txt-muted w-20 shrink-0">
+              <span className="t-text-muted w-20 shrink-0">
                 Y{entry.year} W{String(entry.week).padStart(2, '0')}
               </span>
-              <span className="text-txt-secondary">{entry.message}</span>
+              <span className="t-text-secondary">{entry.message}</span>
             </div>
           ))}
         </div>

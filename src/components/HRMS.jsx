@@ -4,7 +4,6 @@ import { formatCR } from '../helpers';
 const HEADERS = [
   { key: 'id', label: '#', align: 'text-left' },
   { key: 'name', label: 'Name', align: 'text-left' },
-  { key: 'role', label: 'Role', align: 'text-left' },
   { key: 'salary', label: 'Salary (Annual)', align: 'text-right' },
   { key: 'salaryW', label: 'Salary (Weekly)', align: 'text-right' },
   { key: 'status', label: 'Status', align: 'text-left' },
@@ -51,15 +50,15 @@ export default function HRMS({ state }) {
 
   return (
     <div className="p-4 flex flex-col gap-2">
-      <div className="bg-bg-card border border-bg-border rounded overflow-hidden">
+      <div className="t-bg-card t-border border rounded overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm font-mono">
             <thead>
-              <tr className="border-b border-bg-border">
+              <tr className="t-border border-b">
                 {HEADERS.map((h) => (
                   <th
                     key={h.key}
-                    className={`px-3 py-2 text-xs text-txt-secondary uppercase tracking-wider cursor-pointer hover:text-txt-primary select-none ${h.align}`}
+                    className={`px-3 py-2 text-xs t-text-secondary uppercase tracking-wider cursor-pointer select-none ${h.align}`}
                     onClick={() => handleSort(h.key)}
                   >
                     {h.label}{' '}
@@ -76,13 +75,12 @@ export default function HRMS({ state }) {
               {sorted.map((emp, i) => (
                 <tr
                   key={emp.id}
-                  className={`border-b border-bg-border/50 hover:bg-bg-hover ${
-                    i % 2 === 0 ? 'bg-bg-cell' : 'bg-bg-card'
+                  className={`t-border border-b hover:t-bg-hover ${
+                    i % 2 === 0 ? 't-bg-cell' : 't-bg-card'
                   }`}
                 >
-                  <td className="px-3 py-2 text-txt-muted">{emp.id}</td>
-                  <td className="px-3 py-2 text-txt-primary">{emp.name}</td>
-                  <td className="px-3 py-2 text-txt-secondary">{emp.role}</td>
+                  <td className="px-3 py-2 t-text-muted">{emp.id}</td>
+                  <td className="px-3 py-2 t-text">{emp.name}</td>
                   <td className="px-3 py-2 text-right">
                     {formatCR(emp.salary)}
                   </td>
@@ -100,19 +98,18 @@ export default function HRMS({ state }) {
                       {emp.status}
                     </span>
                   </td>
-                  <td className="px-3 py-2 text-txt-muted">
+                  <td className="px-3 py-2 t-text-muted">
                     Wk {emp.joinedWeek}
                   </td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
-              <tr className="border-t-2 border-bg-border bg-bg-card font-semibold">
+              <tr className="t-border border-t-2 t-bg-card font-semibold">
                 <td className="px-3 py-2"></td>
-                <td className="px-3 py-2 text-txt-primary">
+                <td className="px-3 py-2 t-text">
                   Total ({activeCount} active)
                 </td>
-                <td className="px-3 py-2"></td>
                 <td className="px-3 py-2 text-right text-accent-cyan">
                   {formatCR(totalAnnual)}
                 </td>

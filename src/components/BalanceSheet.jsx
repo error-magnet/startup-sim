@@ -7,52 +7,50 @@ export default function BalanceSheet({ state }) {
 
   return (
     <div className="p-4">
-      <div className="bg-bg-card border border-bg-border rounded overflow-hidden">
+      <div className="t-bg-card t-border border rounded overflow-hidden">
         <table className="w-full text-sm font-mono">
           <thead>
-            <tr className="border-b border-bg-border">
-              <th className="px-4 py-2 text-left text-xs text-txt-secondary uppercase tracking-wider w-48"></th>
+            <tr className="t-border border-b">
+              <th className="px-4 py-2 text-left text-xs t-text-secondary uppercase tracking-wider w-48"></th>
               {years.map((y) => (
                 <th
                   key={y}
-                  className="px-4 py-2 text-right text-xs text-txt-secondary uppercase tracking-wider w-44"
+                  className="px-4 py-2 text-right text-xs t-text-secondary uppercase tracking-wider w-44"
                 >
                   Year {y} {y === state.year ? '(to date)' : ''}
                 </th>
               ))}
-              <th className="px-4 py-2 text-right text-xs text-txt-secondary uppercase tracking-wider w-44 border-l border-bg-border">
+              <th className="px-4 py-2 text-right text-xs t-text-secondary uppercase tracking-wider w-44 t-border border-l">
                 Current Week
               </th>
             </tr>
           </thead>
           <tbody>
             {/* Revenue */}
-            <tr className="border-b border-bg-border/50 bg-bg-cell">
-              <td className="px-4 py-2 font-bold text-txt-primary">Revenue</td>
+            <tr className="t-border border-b t-bg-cell">
+              <td className="px-4 py-2 font-bold t-text">Revenue</td>
               {years.map((y) => (
-                <td key={y} className="px-4 py-2 text-right text-txt-muted">
+                <td key={y} className="px-4 py-2 text-right t-text-muted">
                   {formatCR(state.yearlyRevenue[y] || 0)}
                 </td>
               ))}
-              <td className="px-4 py-2 text-right text-txt-muted border-l border-bg-border">
+              <td className="px-4 py-2 text-right t-text-muted t-border border-l">
                 {formatCR(state.currentWeekRevenue)}
               </td>
             </tr>
 
             {/* Expenses header */}
-            <tr className="border-b border-bg-border/50">
-              <td className="px-4 py-2 font-bold text-txt-primary">
-                Expenses
-              </td>
+            <tr className="t-border border-b">
+              <td className="px-4 py-2 font-bold t-text">Expenses</td>
               {years.map((y) => (
                 <td key={y}></td>
               ))}
-              <td className="border-l border-bg-border"></td>
+              <td className="t-border border-l"></td>
             </tr>
 
             {/* Salaries */}
-            <tr className="border-b border-bg-border/50 bg-bg-cell">
-              <td className="px-4 py-2 pl-8 text-txt-secondary">Salaries</td>
+            <tr className="t-border border-b t-bg-cell">
+              <td className="px-4 py-2 pl-8 t-text-secondary">Salaries</td>
               {years.map((y) => {
                 const val = state.yearlyExpenses[y]?.salaries || 0;
                 return (
@@ -61,14 +59,14 @@ export default function BalanceSheet({ state }) {
                   </td>
                 );
               })}
-              <td className="px-4 py-2 text-right text-accent-red border-l border-bg-border">
+              <td className="px-4 py-2 text-right text-accent-red t-border border-l">
                 {formatCR(state.currentWeekExpenses.salaries)}
               </td>
             </tr>
 
             {/* Total Expenses */}
-            <tr className="border-b border-bg-border/50">
-              <td className="px-4 py-2 pl-8 font-semibold text-txt-primary">
+            <tr className="t-border border-b">
+              <td className="px-4 py-2 pl-8 font-semibold t-text">
                 Total Expenses
               </td>
               {years.map((y) => {
@@ -82,7 +80,7 @@ export default function BalanceSheet({ state }) {
                   </td>
                 );
               })}
-              <td className="px-4 py-2 text-right text-accent-red font-semibold border-l border-bg-border">
+              <td className="px-4 py-2 text-right text-accent-red font-semibold t-border border-l">
                 {formatCR(state.currentWeekExpenses.salaries)}
               </td>
             </tr>
@@ -93,8 +91,8 @@ export default function BalanceSheet({ state }) {
             </tr>
 
             {/* Net */}
-            <tr className="border-b border-bg-border/50 border-t-2 border-bg-border bg-bg-cell">
-              <td className="px-4 py-2 font-bold text-txt-primary">Net</td>
+            <tr className="t-border border-b border-t-2 t-bg-cell">
+              <td className="px-4 py-2 font-bold t-text">Net</td>
               {years.map((y) => {
                 const rev = state.yearlyRevenue[y] || 0;
                 const exp = state.yearlyExpenses[y]?.salaries || 0;
@@ -111,7 +109,7 @@ export default function BalanceSheet({ state }) {
                 );
               })}
               <td
-                className={`px-4 py-2 text-right font-bold border-l border-bg-border ${
+                className={`px-4 py-2 text-right font-bold t-border border-l ${
                   state.currentWeekRevenue - state.currentWeekExpenses.salaries <
                   0
                     ? 'text-accent-red'
@@ -130,7 +128,7 @@ export default function BalanceSheet({ state }) {
             </tr>
 
             {/* Bank Balance */}
-            <tr className="bg-bg-cell">
+            <tr className="t-bg-cell">
               <td className="px-4 py-3 font-bold text-accent-cyan text-base">
                 Bank Balance
               </td>
@@ -142,7 +140,7 @@ export default function BalanceSheet({ state }) {
               >
                 {formatCR(state.bank)}
               </td>
-              <td className="border-l border-bg-border"></td>
+              <td className="t-border border-l"></td>
             </tr>
           </tbody>
         </table>

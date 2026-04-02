@@ -16,17 +16,11 @@ export function generateName(existingNames) {
   let attempts = 0;
   while (attempts < 1000) {
     attempts++;
-    const positions = [0, 1, 2, 3, 4];
-    const shuffled = [...positions].sort(() => Math.random() - 0.5);
-    const vowelPositions = new Set(shuffled.slice(0, 2));
-
+    // CVCVC format
     let name = '';
     for (let i = 0; i < 5; i++) {
-      if (vowelPositions.has(i)) {
-        name += VOWELS[Math.floor(Math.random() * VOWELS.length)];
-      } else {
-        name += CONSONANTS[Math.floor(Math.random() * CONSONANTS.length)];
-      }
+      const pool = i % 2 === 0 ? CONSONANTS : VOWELS;
+      name += pool[Math.floor(Math.random() * pool.length)];
     }
     name = name[0].toUpperCase() + name.slice(1);
     const initial = LETTERS[Math.floor(Math.random() * 26)];
@@ -34,6 +28,16 @@ export function generateName(existingNames) {
     if (!existingNames.has(fullName)) return fullName;
   }
   return `Agent ${Math.floor(Math.random() * 9999)}`;
+}
+
+export function generateCompanyName() {
+  // CVCVCVC format
+  let name = '';
+  for (let i = 0; i < 7; i++) {
+    const pool = i % 2 === 0 ? CONSONANTS : VOWELS;
+    name += pool[Math.floor(Math.random() * pool.length)];
+  }
+  return name[0].toUpperCase() + name.slice(1);
 }
 
 export function generateInitialEmployees(count) {
