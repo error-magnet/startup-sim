@@ -16,7 +16,6 @@ export function generateName(existingNames) {
   let attempts = 0;
   while (attempts < 1000) {
     attempts++;
-    // CVCVC format
     let name = '';
     for (let i = 0; i < 5; i++) {
       const pool = i % 2 === 0 ? CONSONANTS : VOWELS;
@@ -31,13 +30,37 @@ export function generateName(existingNames) {
 }
 
 export function generateCompanyName() {
-  // CVCVCVC format
   let name = '';
   for (let i = 0; i < 7; i++) {
     const pool = i % 2 === 0 ? CONSONANTS : VOWELS;
     name += pool[Math.floor(Math.random() * pool.length)];
   }
   return name[0].toUpperCase() + name.slice(1);
+}
+
+function weightedRandom(weights) {
+  let r = Math.random();
+  for (const [value, prob] of weights) {
+    r -= prob;
+    if (r <= 0) return value;
+  }
+  return weights[weights.length - 1][0];
+}
+
+export function generatePersonality() {
+  const salaryPriority = weightedRandom([
+    [1, 0.05], [2, 0.05],
+    [3, 0.20], [4, 0.20], [5, 0.20], [6, 0.20],
+    [7, 0.03], [8, 0.03],
+    [9, 0.02], [10, 0.02],
+  ]);
+  const restlessness = weightedRandom([
+    [1, 0.05],
+    [2, 0.20], [3, 0.20], [4, 0.20], [5, 0.20],
+    [6, 0.04], [7, 0.04],
+    [8, 0.023], [9, 0.023], [10, 0.024],
+  ]);
+  return { salaryPriority, restlessness };
 }
 
 export function generateInitialEmployees(count) {
@@ -50,10 +73,13 @@ export function generateInitialEmployees(count) {
       id: i + 1,
       name,
       salary: 50000,
-      role: 'Unassigned',
+      previousSalary: 50000,
       status: 'Active',
       joinedWeek: 1,
       assignment: null,
+      personality: generatePersonality(),
+      happiness: 100,
+      lastHappinessUpdate: 1,
     });
   }
   return employees;

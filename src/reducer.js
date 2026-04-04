@@ -1,95 +1,140 @@
 import { generateInitialEmployees, generateCompanyName } from './helpers';
 
-const TOTAL_WORK = 36;
+// === Factory functions ===
 
-function makeInitialEpics() {
-  return [
-    {
-      id: 'design-ui',
-      name: 'Product Design & UI Development',
-      productId: 'appify',
-      assignedEmployeeIds: [],
-      workCompleted: 0,
-      totalWork: TOTAL_WORK,
-      status: 'Not Started',
-    },
-    {
-      id: 'infra-security',
-      name: 'Infrastructure & Security',
-      productId: 'appify',
-      assignedEmployeeIds: [],
-      workCompleted: 0,
-      totalWork: TOTAL_WORK,
-      status: 'Not Started',
-    },
-  ];
+function makeAppifyMVP() {
+  return {
+    id: 'appify-mvp',
+    name: 'Appify MVP',
+    productId: 'appify',
+    type: 'mvp',
+    status: 'Active',
+    devCostPerWeek: 2000,
+    totalDevSpend: 0,
+    createdWeek: 1,
+    completedWeek: null,
+    epics: [
+      {
+        id: 'appify-mvp-design',
+        name: 'Product Design & UI Development',
+        projectId: 'appify-mvp',
+        assignedEmployeeIds: [],
+        totalWork: 36,
+        workCompleted: 0,
+        status: 'Not Started',
+        baseHeadcount: 3,
+      },
+      {
+        id: 'appify-mvp-infra',
+        name: 'Infrastructure & Security',
+        projectId: 'appify-mvp',
+        assignedEmployeeIds: [],
+        totalWork: 36,
+        workCompleted: 0,
+        status: 'Not Started',
+        baseHeadcount: 3,
+      },
+    ],
+  };
 }
 
-function makeDefaultRevenueConfig() {
+function makeDefaultProductConfig() {
   return {
-    monthlyPrice: 5,
     signupsPerMonth: 100,
-    baseConversionRate: 0.20,
-    conversionPriceBase: 5,
-    conversionDecreasePerCR: 0.02,
-    conversionIncreasePerCR: 0.01,
-    monthlyChurnRate: 0.20,
+    baseRetentionRate: 0.20,
+    basePrice: 5,
+    retentionDropPerCR: 0.04,
+    retentionGainPerCR: 0.02,
+    baseChurnRate: 0.20,
+    churnIncreasePerCR: 0.04,
+    churnDecreasePerCR: 0.02,
     freeTrialWeeks: 4,
+    weeklyVariance: 0.03,
     infraCostPerUser: 0.5,
     infraBaseCost: 500,
   };
 }
 
-function makeInitialProducts() {
-  return [
-    {
-      id: 'appify',
-      name: 'Appify',
-      type: 'SaaS',
-      phase: 'development', // 'development' | 'production'
-      status: 'In Development',
-      launchedWeek: null,
-      devCostPerWeek: 2000,
-      revenueConfig: makeDefaultRevenueConfig(),
-      // Production infra
-      infraEmployeeIds: [],
-      infraMinStaff: 2,
-      cohorts: [],
-      financials: {
-        totalRevenue: 0,
-        totalInfraCost: 0,
-        totalDevCost: 0,
+function createLiveProduct(productId, name, type, launchedWeek) {
+  return {
+    id: productId,
+    name,
+    type,
+    status: 'Live',
+    launchedWeek,
+    monthlyPrice: 5,
+    config: makeDefaultProductConfig(),
+    cohorts: [],
+    financials: { totalRevenue: 0, totalInfraCost: 0 },
+    lastMonthStats: { signups: 0, converted: 0, churned: 0 },
+  };
+}
+
+function createInfraProject(productId, productName, yearNum, createdWeek) {
+  const projId = `${productId}-infra-y${yearNum}`;
+  return {
+    id: projId,
+    name: `${productName} Infra Y${yearNum}`,
+    productId,
+    type: 'infra',
+    status: 'Active',
+    devCostPerWeek: 1000,
+    totalDevSpend: 0,
+    createdWeek,
+    completedWeek: null,
+    epics: [
+      {
+        id: `${projId}-main`,
+        name: 'Production Infrastructure & Maintenance',
+        projectId: projId,
+        assignedEmployeeIds: [],
+        totalWork: 104,
+        workCompleted: 0,
+        status: 'Not Started',
+        baseHeadcount: 2,
       },
-    },
-  ];
+    ],
+  };
 }
 
-function effectiveWork(headcount) {
+// === Game logic helpers ===
+
+export function effectiveWork(headcount, baseHeadcount = 3) {
   if (headcount === 0) return 0;
-  return Math.min(headcount, 3) + Math.max(0, headcount - 3) * 0.5;
+  return Math.min(headcount, baseHeadcount) + Math.max(0, headcount - baseHeadcount) * 0.5;
 }
 
-function weeksRemaining(epic) {
+export function weeksRemaining(epic) {
   const remaining = epic.totalWork - epic.workCompleted;
   if (remaining <= 0) return 0;
-  const eff = effectiveWork(epic.assignedEmployeeIds.length);
+  const eff = effectiveWork(epic.assignedEmployeeIds.length, epic.baseHeadcount);
   if (eff === 0) return Infinity;
   return Math.ceil(remaining / eff);
 }
 
-function calcConversionRate(config) {
+export function calcRetentionRate(config, monthlyPrice) {
+  const priceDiff = monthlyPrice - config.basePrice;
   let rate;
-  if (config.monthlyPrice <= config.conversionPriceBase) {
-    const discount = config.conversionPriceBase - config.monthlyPrice;
-    rate = config.baseConversionRate + discount * config.conversionIncreasePerCR;
+  if (priceDiff > 0) {
+    rate = config.baseRetentionRate - priceDiff * config.retentionDropPerCR;
   } else {
-    const premium = config.monthlyPrice - config.conversionPriceBase;
-    rate = config.baseConversionRate - premium * config.conversionDecreasePerCR;
+    rate = config.baseRetentionRate + Math.abs(priceDiff) * config.retentionGainPerCR;
   }
-  return Math.max(0.01, Math.min(0.95, rate));
+  return Math.max(0.02, Math.min(0.95, rate));
 }
 
-function getProductUserStats(product) {
+export function calcChurnRate(config, monthlyPrice) {
+  const priceDiff = monthlyPrice - config.basePrice;
+  let rate;
+  if (priceDiff > 0) {
+    rate = config.baseChurnRate + priceDiff * config.churnIncreasePerCR;
+  } else {
+    rate = config.baseChurnRate - Math.abs(priceDiff) * config.churnDecreasePerCR;
+  }
+  return Math.max(0.02, Math.min(0.80, rate));
+}
+
+export function getProductUserStats(product) {
   let trialUsers = 0;
   let payingUsers = 0;
   for (const c of product.cohorts) {
@@ -99,21 +144,25 @@ function getProductUserStats(product) {
   return { trialUsers, payingUsers, totalActive: trialUsers + payingUsers };
 }
 
-function isInfraOperational(product) {
-  return product.infraEmployeeIds.length >= product.infraMinStaff;
+export function findEpicInProjects(epicId, devProjects) {
+  for (const proj of devProjects) {
+    const epic = proj.epics.find((e) => e.id === epicId);
+    if (epic) return { project: proj, epic };
+  }
+  return null;
 }
 
-export { effectiveWork, weeksRemaining, calcConversionRate, getProductUserStats, isInfraOperational };
+// === State initialization ===
 
 const initialEmployees = generateInitialEmployees(10);
 const companyName = generateCompanyName();
 
 function makeInitialYearExpenses() {
-  return { salaries: 0, devCosts: 0, infraCosts: 0 };
+  return { salaries: 0, devProjects: {}, productInfra: {} };
 }
 
 function makeInitialYearRevenue() {
-  return { subscriptions: 0 };
+  return { products: {} };
 }
 
 export const initialState = {
@@ -126,229 +175,279 @@ export const initialState = {
   companyName: `${companyName} Inc.`,
   theme: 'dark',
   employees: initialEmployees,
-  products: makeInitialProducts(),
-  epics: makeInitialEpics(),
+  devProjects: [makeAppifyMVP()],
+  products: [],
   log: [{ week: 1, year: 1, message: 'Game started with 10 employees' }],
   yearlyExpenses: { 1: makeInitialYearExpenses() },
   yearlyRevenue: { 1: makeInitialYearRevenue() },
-  currentWeekExpenses: { salaries: 0, devCosts: 0, infraCosts: 0 },
-  currentWeekRevenue: { subscriptions: 0 },
+  currentWeekExpenses: { salaries: 0, devProjects: {}, productInfra: {} },
+  currentWeekRevenue: { products: {} },
   gameOver: false,
   activeTab: 'dashboard',
+  negotiatingEmployeeId: null,
+  pendingNegotiations: [],
 };
 
-// Helper to remove an employee from all assignments (epics + product infra)
-function removeEmployeeFromAll(employeeId, epics, products) {
-  const newEpics = epics.map((e) => ({
-    ...e,
-    assignedEmployeeIds: e.assignedEmployeeIds.filter((id) => id !== employeeId),
+// === Helpers ===
+
+function removeEmployeeFromAll(employeeId, devProjects) {
+  return devProjects.map((proj) => ({
+    ...proj,
+    epics: proj.epics.map((epic) => ({
+      ...epic,
+      assignedEmployeeIds: epic.assignedEmployeeIds.filter((id) => id !== employeeId),
+    })),
   }));
-  const newProducts = products.map((p) => ({
-    ...p,
-    infraEmployeeIds: p.infraEmployeeIds.filter((id) => id !== employeeId),
-  }));
-  return { epics: newEpics, products: newProducts };
 }
+
+// === Reducer ===
 
 export function gameReducer(state, action) {
   switch (action.type) {
     case 'TICK': {
       if (state.paused || state.gameOver) return state;
 
+      // 1. Advance week counter
       let newWeek = state.week + 1;
       let newYear = state.year;
-      if (newWeek > 52) {
+      const isYearEnd = newWeek > 52;
+      if (isYearEnd) {
         newWeek = 1;
         newYear += 1;
       }
       const newTotalWeeks = state.totalWeeks + 1;
 
-      // Payroll
-      const activeEmployees = state.employees.filter((e) => e.status === 'Active');
-      const weeklyPayroll = activeEmployees.reduce((sum, e) => sum + e.salary / 52, 0);
-      let bankDelta = -weeklyPayroll;
+      // Deep copy mutable state
+      const employees = state.employees.map((e) => ({ ...e, personality: { ...e.personality } }));
+      let devProjects = state.devProjects.map((p) => ({
+        ...p,
+        epics: p.epics.map((e) => ({ ...e, assignedEmployeeIds: [...e.assignedEmployeeIds] })),
+      }));
+      const products = state.products.map((p) => ({
+        ...p,
+        config: { ...p.config },
+        financials: { ...p.financials },
+        lastMonthStats: { ...p.lastMonthStats },
+        cohorts: p.cohorts.map((c) => ({ ...c })),
+      }));
 
-      const yearExp = {
-        ...(state.yearlyExpenses[newYear] || makeInitialYearExpenses()),
-      };
+      const log = [...state.log];
+      let bankDelta = 0;
+
+      // Initialize yearly accumulators
+      const yearExp = { ...(state.yearlyExpenses[newYear] || makeInitialYearExpenses()) };
+      yearExp.devProjects = { ...(yearExp.devProjects || {}) };
+      yearExp.productInfra = { ...(yearExp.productInfra || {}) };
+      const yearRev = { ...(state.yearlyRevenue[newYear] || makeInitialYearRevenue()) };
+      yearRev.products = { ...(yearRev.products || {}) };
+
+      const weekExpDevProjects = {};
+      const weekExpProductInfra = {};
+      const weekRevProducts = {};
+
+      // 2. Process payroll
+      const activeEmps = employees.filter((e) => e.status === 'Active');
+      const weeklyPayroll = activeEmps.reduce((sum, e) => sum + e.salary / 52, 0);
+      bankDelta -= weeklyPayroll;
       yearExp.salaries += weeklyPayroll;
 
-      const yearRev = {
-        ...(state.yearlyRevenue[newYear] || makeInitialYearRevenue()),
-      };
+      log.unshift({
+        week: newWeek, year: newYear,
+        message: `Payroll processed — CR ${Math.round(weeklyPayroll).toLocaleString('en-US')} debited`,
+      });
 
-      let weekDevCosts = 0;
-      let weekInfraCosts = 0;
-      let weekSubRevenue = 0;
-
-      const newLog = [
-        {
-          week: newWeek, year: newYear,
-          message: `Payroll processed — CR ${Math.round(weeklyPayroll).toLocaleString('en-US')} debited`,
-        },
-        ...state.log,
-      ].slice(0, 200);
-
-      // Process epics
+      // 3. Process dev projects
       const freedEmployeeIds = new Set();
-      let newEpics = state.epics.map((epic) => {
-        if (epic.status === 'Complete') return epic;
-        const headcount = epic.assignedEmployeeIds.length;
-        if (headcount === 0) return epic;
+      const newDevProjectsToAdd = [];
 
-        const eff = effectiveWork(headcount);
-        const newWorkCompleted = epic.workCompleted + eff;
-        const completed = newWorkCompleted >= epic.totalWork;
+      for (const proj of devProjects) {
+        if (proj.status !== 'Active') continue;
 
-        if (completed) {
-          newLog.unshift({
-            week: newWeek, year: newYear,
-            message: `${epic.name} completed!`,
-          });
-          epic.assignedEmployeeIds.forEach((id) => freedEmployeeIds.add(id));
+        const hadInProgressEpics = proj.epics.some((e) => e.status === 'In Progress');
+
+        // Process epic work
+        for (const epic of proj.epics) {
+          if (epic.status === 'Complete') continue;
+          if (epic.assignedEmployeeIds.length === 0) continue;
+
+          const eff = effectiveWork(epic.assignedEmployeeIds.length, epic.baseHeadcount);
+          epic.workCompleted = Math.min(epic.workCompleted + eff, epic.totalWork);
+
+          if (epic.workCompleted >= epic.totalWork) {
+            epic.status = 'Complete';
+            epic.assignedEmployeeIds.forEach((id) => freedEmployeeIds.add(id));
+            epic.assignedEmployeeIds = [];
+            log.unshift({ week: newWeek, year: newYear, message: `${epic.name} completed!` });
+          } else {
+            epic.status = 'In Progress';
+          }
         }
 
-        return {
-          ...epic,
-          workCompleted: Math.min(newWorkCompleted, epic.totalWork),
-          status: completed ? 'Complete' : 'In Progress',
-          assignedEmployeeIds: completed ? [] : epic.assignedEmployeeIds,
-        };
-      });
-
-      let newEmployees = freedEmployeeIds.size > 0
-        ? state.employees.map((e) =>
-            freedEmployeeIds.has(e.id) ? { ...e, assignment: null } : e
-          )
-        : state.employees;
-
-      // Process products
-      let newProducts = state.products.map((product) => {
-        let p = { ...product, financials: { ...product.financials } };
-
-        // === Development phase ===
-        if (p.phase === 'development') {
-          const productEpics = newEpics.filter((e) => e.productId === p.id);
-          const anyInProgress = productEpics.some((e) => e.status === 'In Progress');
-
-          if (anyInProgress) {
-            weekDevCosts += p.devCostPerWeek;
-            bankDelta -= p.devCostPerWeek;
-            p.financials.totalDevCost += p.devCostPerWeek;
-          }
-
-          // Check if all epics done -> transition to production
-          const allComplete = productEpics.every((e) => e.status === 'Complete');
-          if (allComplete && productEpics.length > 0) {
-            p.phase = 'production';
-            p.status = 'Live';
-            p.launchedWeek = newTotalWeeks;
-            p.cohorts = [];
-            newLog.unshift({
-              week: newWeek, year: newYear,
-              message: `${p.name} MVP Development complete! Production infrastructure now needs staffing.`,
-            });
-          }
-          return p;
+        // Charge dev cost if any epics were in progress
+        if (hadInProgressEpics) {
+          bankDelta -= proj.devCostPerWeek;
+          proj.totalDevSpend += proj.devCostPerWeek;
+          weekExpDevProjects[proj.id] = (weekExpDevProjects[proj.id] || 0) + proj.devCostPerWeek;
+          yearExp.devProjects[proj.id] = (yearExp.devProjects[proj.id] || 0) + proj.devCostPerWeek;
         }
 
-        // === Production phase ===
-        if (p.phase === 'production') {
-          const cfg = p.revenueConfig;
-          const operational = p.infraEmployeeIds.length >= p.infraMinStaff;
+        // Check if all epics are now complete
+        const allComplete = proj.epics.every((e) => e.status === 'Complete');
+        if (allComplete && proj.epics.length > 0) {
+          proj.status = 'Complete';
+          proj.completedWeek = newTotalWeeks;
 
-          // Infra cost always applies once live
-          const totalActive = getProductUserStats(p).totalActive;
-          const infra = cfg.infraBaseCost + totalActive * cfg.infraCostPerUser;
-          weekInfraCosts += infra;
-          bankDelta -= infra;
-          p.financials.totalInfraCost += infra;
+          if (proj.type === 'mvp') {
+            const productName = proj.productId === 'appify' ? 'Appify' : proj.name.replace(' MVP', '');
+            products.push(createLiveProduct(proj.productId, productName, 'SaaS', newTotalWeeks));
+            newDevProjectsToAdd.push(createInfraProject(proj.productId, productName, 1, newTotalWeeks));
+            log.unshift({ week: newWeek, year: newYear, message: `${proj.name} shipped! Product is now live.` });
+            log.unshift({ week: newWeek, year: newYear, message: `${productName} Infra Y1 project created. Assign engineers.` });
+          } else if (proj.type === 'infra') {
+            log.unshift({ week: newWeek, year: newYear, message: `${proj.name} completed.` });
+          }
+        }
+      }
 
-          // Revenue & user funnel only if infra is operational
-          if (operational) {
-            const weeksSinceLaunch = newTotalWeeks - p.launchedWeek;
-            let newCohorts = p.cohorts.map((c) => ({ ...c }));
+      devProjects = [...devProjects, ...newDevProjectsToAdd];
 
-            // Monthly events (every 4 weeks since launch)
-            if (weeksSinceLaunch > 0 && weeksSinceLaunch % 4 === 0) {
-              const conversionRate = calcConversionRate(cfg);
-              let monthlyConverted = 0;
-              let monthlyChurned = 0;
+      // Free employees from completed epics
+      for (const emp of employees) {
+        if (freedEmployeeIds.has(emp.id)) emp.assignment = null;
+      }
 
-              // Convert trial cohorts whose trial ended
-              newCohorts = newCohorts.map((c) => {
-                if (c.status !== 'trial') return c;
-                const trialAge = newTotalWeeks - c.signupWeek;
-                if (trialAge >= cfg.freeTrialWeeks) {
-                  const paying = Math.floor(c.totalSignups * conversionRate);
-                  monthlyConverted += paying;
-                  return { ...c, status: 'active', payingUsers: paying };
-                }
-                return c;
-              });
+      // 4. Process live products
+      for (const product of products) {
+        const cfg = product.config;
+        const weeksSinceLaunch = newTotalWeeks - product.launchedWeek;
 
-              // Churn
-              let totalPaying = newCohorts.reduce(
-                (s, c) => s + (c.status === 'active' ? c.payingUsers : 0), 0
-              );
-              let toChurn = Math.floor(totalPaying * cfg.monthlyChurnRate);
-              monthlyChurned = toChurn;
-              for (let i = 0; i < newCohorts.length && toChurn > 0; i++) {
-                if (newCohorts[i].status === 'active' && newCohorts[i].payingUsers > 0) {
-                  const remove = Math.min(toChurn, newCohorts[i].payingUsers);
-                  newCohorts[i] = { ...newCohorts[i], payingUsers: newCohorts[i].payingUsers - remove };
-                  toChurn -= remove;
-                }
-              }
-              newCohorts = newCohorts.filter((c) => c.status === 'trial' || c.payingUsers > 0);
+        // Check if new annual infra project needed
+        if (weeksSinceLaunch > 0 && weeksSinceLaunch % 52 === 0) {
+          const existingInfra = devProjects.filter((p) => p.productId === product.id && p.type === 'infra');
+          const yearNum = existingInfra.length + 1;
+          const newInfra = createInfraProject(product.id, product.name, yearNum, newTotalWeeks);
+          devProjects.push(newInfra);
+          log.unshift({ week: newWeek, year: newYear, message: `${product.name} Infra Y${yearNum} project created. Assign engineers.` });
+        }
 
-              // New signups
-              const monthlyNewSignups = cfg.signupsPerMonth;
-              newCohorts.push({
-                signupWeek: newTotalWeeks,
-                totalSignups: monthlyNewSignups,
-                status: 'trial',
-                payingUsers: 0,
-              });
+        // Monthly cycle (every 4 weeks from launch)
+        if (weeksSinceLaunch > 0 && weeksSinceLaunch % 4 === 0) {
+          const retentionBase = calcRetentionRate(cfg, product.monthlyPrice);
+          const churnBase = calcChurnRate(cfg, product.monthlyPrice);
+          const retentionRate = Math.max(0.02, Math.min(0.95,
+            retentionBase + (Math.random() * 2 - 1) * cfg.weeklyVariance
+          ));
+          const churnRate = Math.max(0.02, Math.min(0.80,
+            churnBase + (Math.random() * 2 - 1) * cfg.weeklyVariance
+          ));
 
-              const stats = { paying: 0, trial: 0 };
-              for (const c of newCohorts) {
-                if (c.status === 'trial') stats.trial += c.totalSignups;
-                else stats.paying += c.payingUsers;
-              }
-              newLog.unshift({
-                week: newWeek, year: newYear,
-                message: `${p.name}: ${monthlyNewSignups} signups, ${monthlyConverted} converted, ${monthlyChurned} churned. Active: ${stats.trial + stats.paying}`,
-              });
+          let monthlyConverted = 0;
+          let monthlyChurned = 0;
+
+          // Convert trial cohorts whose trial ended
+          for (const c of product.cohorts) {
+            if (c.status !== 'trial') continue;
+            if (newTotalWeeks - c.signupWeek >= cfg.freeTrialWeeks) {
+              const paying = Math.floor(c.totalSignups * retentionRate);
+              monthlyConverted += paying;
+              c.status = 'active';
+              c.payingUsers = paying;
             }
+          }
 
-            p.cohorts = newCohorts;
+          // Churn from paying users
+          const totalPaying = product.cohorts.reduce(
+            (s, c) => s + (c.status === 'active' ? c.payingUsers : 0), 0
+          );
+          let toChurn = Math.floor(totalPaying * churnRate);
+          monthlyChurned = toChurn;
+          for (const c of product.cohorts) {
+            if (toChurn <= 0) break;
+            if (c.status === 'active' && c.payingUsers > 0) {
+              const remove = Math.min(toChurn, c.payingUsers);
+              c.payingUsers -= remove;
+              toChurn -= remove;
+            }
+          }
+          product.cohorts = product.cohorts.filter((c) => c.status === 'trial' || c.payingUsers > 0);
 
-            // Weekly revenue
-            const totalPaying = p.cohorts.reduce(
-              (s, c) => s + (c.status === 'active' ? c.payingUsers : 0), 0
-            );
-            const revenue = (totalPaying * cfg.monthlyPrice) / 4;
-            weekSubRevenue += revenue;
-            bankDelta += revenue;
-            p.financials.totalRevenue += revenue;
+          // New signups
+          product.cohorts.push({
+            signupWeek: newTotalWeeks,
+            totalSignups: cfg.signupsPerMonth,
+            status: 'trial',
+            payingUsers: 0,
+          });
+
+          product.lastMonthStats = {
+            signups: cfg.signupsPerMonth,
+            converted: monthlyConverted,
+            churned: monthlyChurned,
+          };
+
+          const stats = getProductUserStats(product);
+          log.unshift({
+            week: newWeek, year: newYear,
+            message: `${product.name}: ${cfg.signupsPerMonth} signups, ${monthlyConverted} converted, ${monthlyChurned} churned. Active: ${stats.totalActive}`,
+          });
+        }
+
+        // Weekly revenue
+        const stats = getProductUserStats(product);
+        const revenue = (stats.payingUsers * product.monthlyPrice) / 4;
+        bankDelta += revenue;
+        product.financials.totalRevenue += revenue;
+        weekRevProducts[product.id] = (weekRevProducts[product.id] || 0) + revenue;
+        yearRev.products[product.id] = (yearRev.products[product.id] || 0) + revenue;
+
+        // Weekly infra cost
+        const infraCost = cfg.infraBaseCost + stats.totalActive * cfg.infraCostPerUser;
+        bankDelta -= infraCost;
+        product.financials.totalInfraCost += infraCost;
+        weekExpProductInfra[product.id] = (weekExpProductInfra[product.id] || 0) + infraCost;
+        yearExp.productInfra[product.id] = (yearExp.productInfra[product.id] || 0) + infraCost;
+      }
+
+      // 5. Yearly boundary: happiness and attrition
+      const pendingNegotiations = [];
+      if (isYearEnd) {
+        for (const emp of employees) {
+          if (emp.status !== 'Active') continue;
+
+          const salaryDelta = emp.salary - (emp.previousSalary + 100);
+          const salaryPenalty = salaryDelta < 0
+            ? (Math.abs(salaryDelta) / 1000) * emp.personality.salaryPriority
+            : 0;
+
+          emp.happiness = Math.max(0, Math.min(100,
+            emp.happiness - emp.personality.restlessness - salaryPenalty
+          ));
+          emp.previousSalary = emp.salary;
+          emp.lastHappinessUpdate = newTotalWeeks;
+
+          if (emp.happiness < 50 && Math.random() < 0.5) {
+            pendingNegotiations.push(emp.id);
           }
         }
 
-        return p;
-      });
+        if (pendingNegotiations.length > 0) {
+          const firstEmp = employees.find((e) => e.id === pendingNegotiations[0]);
+          firstEmp.status = 'Negotiating';
+          log.unshift({
+            week: newWeek, year: newYear,
+            message: `${firstEmp.name} is unhappy and considering leaving`,
+          });
+        }
+      }
 
-      yearExp.devCosts = (yearExp.devCosts || 0) + weekDevCosts;
-      yearExp.infraCosts = (yearExp.infraCosts || 0) + weekInfraCosts;
-      yearRev.subscriptions = (yearRev.subscriptions || 0) + weekSubRevenue;
+      // 6. Trim log
+      while (log.length > 200) log.pop();
 
+      // 7. Bank and game over
       const newBank = state.bank + bankDelta;
       const gameOver = newBank <= 0;
       if (gameOver) {
-        newLog.unshift({
-          week: newWeek, year: newYear,
-          message: 'GAME OVER — Startup ran out of money!',
-        });
+        log.unshift({ week: newWeek, year: newYear, message: 'GAME OVER — Startup ran out of money!' });
       }
 
       return {
@@ -357,36 +456,42 @@ export function gameReducer(state, action) {
         year: newYear,
         totalWeeks: newTotalWeeks,
         bank: newBank,
-        employees: newEmployees,
-        epics: newEpics,
-        products: newProducts,
+        employees,
+        devProjects,
+        products,
         yearlyExpenses: { ...state.yearlyExpenses, [newYear]: yearExp },
         yearlyRevenue: { ...state.yearlyRevenue, [newYear]: yearRev },
-        currentWeekExpenses: { salaries: weeklyPayroll, devCosts: weekDevCosts, infraCosts: weekInfraCosts },
-        currentWeekRevenue: { subscriptions: weekSubRevenue },
-        log: newLog,
+        currentWeekExpenses: { salaries: weeklyPayroll, devProjects: weekExpDevProjects, productInfra: weekExpProductInfra },
+        currentWeekRevenue: { products: weekRevProducts },
+        log,
         gameOver,
-        paused: gameOver ? true : state.paused,
+        paused: gameOver || pendingNegotiations.length > 0 ? true : state.paused,
+        negotiatingEmployeeId: pendingNegotiations.length > 0 ? pendingNegotiations[0] : null,
+        pendingNegotiations,
       };
     }
 
     case 'ASSIGN_EMPLOYEE': {
       const { employeeId, epicId } = action;
-      const epic = state.epics.find((e) => e.id === epicId);
-      if (!epic || epic.status === 'Complete') return state;
+      const found = findEpicInProjects(epicId, state.devProjects);
+      if (!found || found.epic.status === 'Complete') return state;
 
-      // Remove from everywhere first
-      let { epics: newEpics, products: newProducts } = removeEmployeeFromAll(employeeId, state.epics, state.products);
-
-      // Add to epic
-      newEpics = newEpics.map((e) =>
-        e.id === epicId
+      let newDevProjects = removeEmployeeFromAll(employeeId, state.devProjects);
+      newDevProjects = newDevProjects.map((proj) =>
+        proj.id === found.project.id
           ? {
-              ...e,
-              assignedEmployeeIds: [...e.assignedEmployeeIds, employeeId],
-              status: e.status === 'Not Started' ? 'In Progress' : e.status,
+              ...proj,
+              epics: proj.epics.map((e) =>
+                e.id === epicId
+                  ? {
+                      ...e,
+                      assignedEmployeeIds: [...e.assignedEmployeeIds, employeeId],
+                      status: e.status === 'Not Started' ? 'In Progress' : e.status,
+                    }
+                  : e
+              ),
             }
-          : e
+          : proj
       );
 
       const newEmployees = state.employees.map((emp) =>
@@ -395,39 +500,11 @@ export function gameReducer(state, action) {
 
       const emp = state.employees.find((e) => e.id === employeeId);
       const newLog = [
-        { week: state.week, year: state.year, message: `${emp.name} assigned to ${epic.name}` },
+        { week: state.week, year: state.year, message: `${emp.name} assigned to ${found.epic.name}` },
         ...state.log,
       ].slice(0, 200);
 
-      return { ...state, epics: newEpics, products: newProducts, employees: newEmployees, log: newLog };
-    }
-
-    case 'ASSIGN_INFRA': {
-      const { employeeId, productId } = action;
-      const product = state.products.find((p) => p.id === productId);
-      if (!product || product.phase !== 'production') return state;
-
-      // Remove from everywhere first
-      let { epics: newEpics, products: newProducts } = removeEmployeeFromAll(employeeId, state.epics, state.products);
-
-      // Add to product infra
-      newProducts = newProducts.map((p) =>
-        p.id === productId
-          ? { ...p, infraEmployeeIds: [...p.infraEmployeeIds, employeeId] }
-          : p
-      );
-
-      const newEmployees = state.employees.map((emp) =>
-        emp.id === employeeId ? { ...emp, assignment: `${productId}-infra` } : emp
-      );
-
-      const emp = state.employees.find((e) => e.id === employeeId);
-      const newLog = [
-        { week: state.week, year: state.year, message: `${emp.name} assigned to ${product.name} Infrastructure` },
-        ...state.log,
-      ].slice(0, 200);
-
-      return { ...state, epics: newEpics, products: newProducts, employees: newEmployees, log: newLog };
+      return { ...state, devProjects: newDevProjects, employees: newEmployees, log: newLog };
     }
 
     case 'UNASSIGN_EMPLOYEE': {
@@ -435,19 +512,13 @@ export function gameReducer(state, action) {
       const emp = state.employees.find((e) => e.id === employeeId);
       if (!emp) return state;
 
-      const oldAssignment = emp.assignment;
       let label = 'their assignment';
-      if (oldAssignment) {
-        const epic = state.epics.find((e) => e.id === oldAssignment);
-        if (epic) label = epic.name;
-        else {
-          const product = state.products.find((p) => `${p.id}-infra` === oldAssignment);
-          if (product) label = `${product.name} Infrastructure`;
-        }
+      if (emp.assignment) {
+        const found = findEpicInProjects(emp.assignment, state.devProjects);
+        if (found) label = `${found.project.name}: ${found.epic.name}`;
       }
 
-      let { epics: newEpics, products: newProducts } = removeEmployeeFromAll(employeeId, state.epics, state.products);
-
+      const newDevProjects = removeEmployeeFromAll(employeeId, state.devProjects);
       const newEmployees = state.employees.map((e) =>
         e.id === employeeId ? { ...e, assignment: null } : e
       );
@@ -457,20 +528,115 @@ export function gameReducer(state, action) {
         ...state.log,
       ].slice(0, 200);
 
-      return { ...state, epics: newEpics, products: newProducts, employees: newEmployees, log: newLog };
+      return { ...state, devProjects: newDevProjects, employees: newEmployees, log: newLog };
     }
 
     case 'SET_PRICE': {
       const { productId, price } = action;
       const newProducts = state.products.map((p) =>
-        p.id === productId
-          ? { ...p, revenueConfig: { ...p.revenueConfig, monthlyPrice: price } }
-          : p
+        p.id === productId ? { ...p, monthlyPrice: price } : p
       );
       return { ...state, products: newProducts };
     }
 
+    case 'NEGOTIATE_OFFER': {
+      const { employeeId, newSalary } = action;
+      const emp = state.employees.find((e) => e.id === employeeId);
+      if (!emp || emp.status !== 'Negotiating') return state;
+
+      const minRaise = emp.personality.salaryPriority * 1000;
+      const accepted = newSalary >= emp.salary + minRaise;
+
+      let newEmployees;
+      let newDevProjects = state.devProjects;
+      const newLog = [...state.log];
+
+      if (accepted) {
+        newEmployees = state.employees.map((e) =>
+          e.id === employeeId
+            ? { ...e, salary: newSalary, previousSalary: newSalary, happiness: 60, status: 'Active' }
+            : e
+        );
+        newLog.unshift({
+          week: state.week, year: state.year,
+          message: `${emp.name} accepted raise to CR ${newSalary.toLocaleString('en-US')}`,
+        });
+      } else {
+        newDevProjects = removeEmployeeFromAll(employeeId, state.devProjects);
+        newEmployees = state.employees.map((e) =>
+          e.id === employeeId ? { ...e, status: 'Left', assignment: null } : e
+        );
+        newLog.unshift({
+          week: state.week, year: state.year,
+          message: `${emp.name} rejected offer and left`,
+        });
+      }
+
+      const remaining = state.pendingNegotiations.slice(1);
+      const nextId = remaining.length > 0 ? remaining[0] : null;
+
+      if (nextId) {
+        newEmployees = newEmployees.map((e) =>
+          e.id === nextId ? { ...e, status: 'Negotiating' } : e
+        );
+        const nextEmp = newEmployees.find((e) => e.id === nextId);
+        newLog.unshift({
+          week: state.week, year: state.year,
+          message: `${nextEmp.name} is unhappy and considering leaving`,
+        });
+      }
+
+      return {
+        ...state,
+        employees: newEmployees,
+        devProjects: newDevProjects,
+        log: newLog.slice(0, 200),
+        negotiatingEmployeeId: nextId,
+        pendingNegotiations: remaining,
+      };
+    }
+
+    case 'LET_EMPLOYEE_GO': {
+      const { employeeId } = action;
+      const emp = state.employees.find((e) => e.id === employeeId);
+      if (!emp || emp.status !== 'Negotiating') return state;
+
+      const newDevProjects = removeEmployeeFromAll(employeeId, state.devProjects);
+      let newEmployees = state.employees.map((e) =>
+        e.id === employeeId ? { ...e, status: 'Left', assignment: null } : e
+      );
+
+      const newLog = [
+        { week: state.week, year: state.year, message: `${emp.name} has left the company` },
+        ...state.log,
+      ];
+
+      const remaining = state.pendingNegotiations.slice(1);
+      const nextId = remaining.length > 0 ? remaining[0] : null;
+
+      if (nextId) {
+        newEmployees = newEmployees.map((e) =>
+          e.id === nextId ? { ...e, status: 'Negotiating' } : e
+        );
+        const nextEmp = newEmployees.find((e) => e.id === nextId);
+        newLog.unshift({
+          week: state.week, year: state.year,
+          message: `${nextEmp.name} is unhappy and considering leaving`,
+        });
+      }
+
+      return {
+        ...state,
+        employees: newEmployees,
+        devProjects: newDevProjects,
+        log: newLog.slice(0, 200),
+        negotiatingEmployeeId: nextId,
+        pendingNegotiations: remaining,
+      };
+    }
+
     case 'TOGGLE_PAUSE':
+      if (state.negotiatingEmployeeId) return state;
       return { ...state, paused: !state.paused };
     case 'SET_SPEED':
       return { ...state, speed: action.speed };
@@ -481,14 +647,14 @@ export function gameReducer(state, action) {
     case 'TOGGLE_THEME':
       return { ...state, theme: state.theme === 'dark' ? 'light' : 'dark' };
     case 'RESTART': {
-      const newEmployees = generateInitialEmployees(10);
+      const newEmps = generateInitialEmployees(10);
       const newName = generateCompanyName();
       return {
         ...initialState,
         companyName: `${newName} Inc.`,
-        employees: newEmployees,
-        products: makeInitialProducts(),
-        epics: makeInitialEpics(),
+        employees: newEmps,
+        devProjects: [makeAppifyMVP()],
+        products: [],
         theme: state.theme,
         log: [{ week: 1, year: 1, message: 'Game started with 10 employees' }],
         yearlyExpenses: { 1: makeInitialYearExpenses() },

@@ -12,7 +12,6 @@
 }
 
 :root {
-  /* Dark theme defaults */
   --bg: #0a0e17;
   --bg-card: #0f1420;
   --bg-cell: #131825;
@@ -38,11 +37,11 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--txt-primary);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
   transition: background-color 0.15s, color 0.15s;
 }
 
-/* Utility classes that respond to theme */
 .t-bg { background: var(--bg); }
 .t-bg-card { background: var(--bg-card); }
 .t-bg-cell { background: var(--bg-cell); }
@@ -52,7 +51,21 @@ body {
 .t-text-secondary { color: var(--txt-secondary); }
 .t-text-muted { color: var(--txt-muted); }
 
+/* Spreadsheet table style */
+.sheet td, .sheet th {
+  border: 1px solid var(--bg-border);
+  padding: 4px 8px;
+}
+.sheet th {
+  background: var(--bg-cell);
+  font-weight: 600;
+  text-align: left;
+}
+.sheet tr:hover td {
+  background: var(--bg-hover);
+}
+
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-card); }
-::-webkit-scrollbar-thumb { background: var(--bg-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: var(--bg-border); border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--txt-muted); }

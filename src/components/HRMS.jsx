@@ -1,12 +1,16 @@
 import { useState, useMemo } from 'react';
 import { formatCR } from '../helpers';
+import { findEpicInProjects } from '../reducer';
 
 const HEADERS = [
   { key: 'id', label: '#', align: 'text-left' },
   { key: 'name', label: 'Name', align: 'text-left' },
   { key: 'assignment', label: 'Assignment', align: 'text-left' },
-  { key: 'salary', label: 'Salary (Annual)', align: 'text-right' },
-  { key: 'salaryW', label: 'Salary (Weekly)', align: 'text-right' },
+  { key: 'salary', label: 'Salary (Ann)', align: 'text-right' },
+  { key: 'salaryW', label: 'Salary (Wk)', align: 'text-right' },
+  { key: 'happiness', label: 'Happiness', align: 'text-right' },
+  { key: 'salaryPriority', label: 'Sal.Pri', align: 'text-center' },
+  { key: 'restlessness', label: 'Restless', align: 'text-center' },
   { key: 'status', label: 'Status', align: 'text-left' },
   { key: 'joinedWeek', label: 'Joined', align: 'text-left' },
 ];
@@ -15,38 +19,28 @@ export default function HRMS({ state }) {
   const [sortKey, setSortKey] = useState('id');
   const [sortAsc, setSortAsc] = useState(true);
 
-  const epicMap = useMemo(() => {
-    const map = {};
-    for (const epic of state.epics) {
-      map[epic.id] = epic;
-    }
-    return map;
-  }, [state.epics]);
-
   const handleSort = (key) => {
     const resolved = key === 'salaryW' ? 'salary' : key;
     if (sortKey === resolved) setSortAsc(!sortAsc);
-    else {
-      setSortKey(resolved);
-      setSortAsc(true);
-    }
+    else { setSortKey(resolved); setSortAsc(true); }
   };
 
   const sorted = useMemo(() => {
     const arr = [...state.employees];
     arr.sort((a, b) => {
       let va, vb;
-      if (sortKey === 'assignment') {
-        va = a.assignment || '';
-        vb = b.assignment || '';
+      if (sortKey === 'salary') {
+        va = a.salary; vb = b.salary;
+      } else if (sortKey === 'salaryPriority') {
+        va = a.personality.salaryPriority; vb = b.personality.salaryPriority;
+      } else if (sortKey === 'restlessness') {
+        va = a.personality.restlessness; vb = b.personality.restlessness;
+      } else if (sortKey === 'assignment') {
+        va = a.assignment || ''; vb = b.assignment || '';
       } else {
-        va = a[sortKey];
-        vb = b[sortKey];
+        va = a[sortKey]; vb = b[sortKey];
       }
-      if (typeof va === 'string') {
-        va = va.toLowerCase();
-        vb = vb.toLowerCase();
-      }
+      if (typeof va === 'string') { va = va.toLowerCase(); vb = (vb || '').toLowerCase(); }
       if (va < vb) return sortAsc ? -1 : 1;
       if (va > vb) return sortAsc ? 1 : -1;
       return 0;
@@ -54,111 +48,84 @@ export default function HRMS({ state }) {
     return arr;
   }, [state.employees, sortKey, sortAsc]);
 
+  const activeCount = state.employees.filter((e) => e.status !== 'Left').length;
   const totalAnnual = state.employees.reduce(
-    (s, e) => s + (e.status === 'Active' ? e.salary : 0),
-    0
+    (s, e) => s + (e.status !== 'Left' ? e.salary : 0), 0
   );
   const totalWeekly = totalAnnual / 52;
-  const activeCount = state.employees.filter(
-    (e) => e.status === 'Active'
-  ).length;
 
   function getAssignmentLabel(emp) {
     if (!emp.assignment) return 'Unassigned';
-    // Check if it's infra assignment (e.g. "appify-infra")
-    if (emp.assignment.endsWith('-infra')) {
-      const productId = emp.assignment.replace('-infra', '');
-      const product = state.products.find((p) => p.id === productId);
-      return `${product?.name || ''}: Infrastructure`;
-    }
-    // Otherwise it's an epic
-    const epic = epicMap[emp.assignment];
-    if (!epic) return 'Unassigned';
-    const product = state.products.find((p) => p.id === epic.productId);
-    const shortEpic = epic.name.length > 20 ? epic.name.slice(0, 18) + '...' : epic.name;
-    return `${product?.name || ''}: ${shortEpic}`;
+    const found = findEpicInProjects(emp.assignment, state.devProjects);
+    if (!found) return 'Unassigned';
+    const shortEpic = found.epic.name.length > 20 ? found.epic.name.slice(0, 18) + '...' : found.epic.name;
+    return `${found.project.name}: ${shortEpic}`;
+  }
+
+  function happinessColor(h) {
+    if (h >= 80) return 'text-accent-green';
+    if (h >= 50) return 'text-accent-yellow';
+    return 'text-accent-red';
   }
 
   return (
-    <div className="p-4 flex flex-col gap-2">
-      <div className="t-bg-card t-border border rounded overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm font-mono">
-            <thead>
-              <tr className="t-border border-b">
-                {HEADERS.map((h) => (
-                  <th
-                    key={h.key}
-                    className={`px-3 py-2 text-xs t-text-secondary uppercase tracking-wider cursor-pointer select-none ${h.align}`}
-                    onClick={() => handleSort(h.key)}
-                  >
-                    {h.label}{' '}
-                    {sortKey === (h.key === 'salaryW' ? 'salary' : h.key)
-                      ? sortAsc
-                        ? '▲'
-                        : '▼'
-                      : ''}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((emp, i) => (
-                <tr
-                  key={emp.id}
-                  className={`t-border border-b hover:t-bg-hover ${
-                    i % 2 === 0 ? 't-bg-cell' : 't-bg-card'
-                  }`}
+    <div className="p-3">
+      <div className="t-bg-card t-border border overflow-hidden">
+        <table className="sheet w-full text-sm">
+          <thead>
+            <tr>
+              {HEADERS.map((h) => (
+                <th
+                  key={h.key}
+                  className={`cursor-pointer select-none ${h.align}`}
+                  onClick={() => handleSort(h.key)}
                 >
-                  <td className="px-3 py-2 t-text-muted">{emp.id}</td>
-                  <td className="px-3 py-2 t-text">{emp.name}</td>
-                  <td className="px-3 py-2">
-                    <span className={emp.assignment ? 'text-accent-blue' : 't-text-muted'}>
-                      {getAssignmentLabel(emp)}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    {formatCR(emp.salary)}
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    {formatCR(emp.salary / 52)}
-                  </td>
-                  <td className="px-3 py-2">
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded ${
-                        emp.status === 'Active'
-                          ? 'bg-accent-green/20 text-accent-green'
-                          : 'bg-accent-red/20 text-accent-red'
-                      }`}
-                    >
-                      {emp.status}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 t-text-muted">
-                    Wk {emp.joinedWeek}
-                  </td>
-                </tr>
+                  {h.label}{' '}
+                  {sortKey === (h.key === 'salaryW' ? 'salary' : h.key)
+                    ? sortAsc ? '▲' : '▼' : ''}
+                </th>
               ))}
-            </tbody>
-            <tfoot>
-              <tr className="t-border border-t-2 t-bg-card font-semibold">
-                <td className="px-3 py-2"></td>
-                <td className="px-3 py-2 t-text">
-                  Total ({activeCount} active)
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((emp) => (
+              <tr key={emp.id} className={emp.status === 'Left' ? 'opacity-40' : ''}>
+                <td className="t-text-muted font-mono">{emp.id}</td>
+                <td className="t-text">{emp.name}</td>
+                <td>
+                  <span className={emp.assignment ? 'text-accent-blue' : 't-text-muted'}>
+                    {getAssignmentLabel(emp)}
+                  </span>
                 </td>
-                <td className="px-3 py-2"></td>
-                <td className="px-3 py-2 text-right text-accent-cyan">
-                  {formatCR(totalAnnual)}
+                <td className="text-right font-mono">{formatCR(emp.salary)}</td>
+                <td className="text-right font-mono">{formatCR(emp.salary / 52)}</td>
+                <td className={`text-right font-mono ${happinessColor(emp.happiness)}`}>
+                  {emp.happiness.toFixed(0)}
                 </td>
-                <td className="px-3 py-2 text-right text-accent-cyan">
-                  {formatCR(totalWeekly)}
+                <td className="text-center font-mono t-text-secondary">{emp.personality.salaryPriority}</td>
+                <td className="text-center font-mono t-text-secondary">{emp.personality.restlessness}</td>
+                <td>
+                  <span className={
+                    emp.status === 'Active' ? 'text-accent-green'
+                      : emp.status === 'Negotiating' ? 'text-accent-yellow'
+                        : 'text-accent-red'
+                  }>{emp.status}</span>
                 </td>
-                <td className="px-3 py-2"></td>
-                <td className="px-3 py-2"></td>
+                <td className="t-text-muted font-mono">Wk {emp.joinedWeek}</td>
               </tr>
-            </tfoot>
-          </table>
-        </div>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className="font-semibold" style={{ borderTop: '2px solid var(--bg-border)' }}>
+              <td></td>
+              <td className="t-text">Total ({activeCount} active)</td>
+              <td></td>
+              <td className="text-right text-accent-cyan font-mono">{formatCR(totalAnnual)}</td>
+              <td className="text-right text-accent-cyan font-mono">{formatCR(totalWeekly)}</td>
+              <td colSpan={5}></td>
+            </tr>
+          </tfoot>
+        </table>
       </div>
     </div>
   );
