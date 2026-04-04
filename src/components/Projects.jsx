@@ -170,7 +170,7 @@ export default function Projects({ state, dispatch }) {
   const unassigned = state.employees.filter((e) => !e.assignment && e.status === 'Active');
 
   return (
-    <div className="p-3 flex flex-col gap-4">
+    <div className="p-3 flex flex-col gap-4 min-w-0">
       {state.devProjects.map((proj) => (
         <ProjectCard key={proj.id} project={proj} state={state} dispatch={dispatch} unassigned={unassigned} />
       ))}

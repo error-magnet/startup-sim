@@ -69,7 +69,7 @@ export default function HRMS({ state }) {
   }
 
   return (
-    <div className="p-3">
+    <div className="p-3 min-w-0">
       <div className="t-bg-card t-border border overflow-x-auto">
         <table className="sheet w-full text-sm min-w-[720px]">
           <thead>

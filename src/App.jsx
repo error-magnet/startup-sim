@@ -140,7 +140,7 @@ export default function App() {
   const barBorder = isPlaying ? 'rgba(0,210,106,0.3)' : undefined;
 
   return (
-    <div className="h-screen flex flex-col t-bg t-text">
+    <div className="h-screen flex flex-col t-bg t-text overflow-hidden">
       {/* Top Bar */}
       <div
         className="t-bg-card t-border border-b flex flex-col sm:flex-row sm:items-center sm:justify-between px-3 py-1.5 shrink-0 transition-colors gap-1 sm:gap-0"
@@ -271,7 +271,7 @@ export default function App() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto min-w-0">
         {state.activeTab === 'dashboard' && <Dashboard state={state} />}
         {state.activeTab === 'growth' && <Growth state={state} dispatch={dispatch} />}
         {state.activeTab === 'projects' && <Projects state={state} dispatch={dispatch} />}
