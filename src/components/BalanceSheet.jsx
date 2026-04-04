@@ -70,9 +70,9 @@ export default function BalanceSheet({ state }) {
   const wkTotalRev = Object.values(wkRev.products || {}).reduce((s, v) => s + v, 0);
 
   return (
-    <div className="p-3">
-      <div className="t-bg-card t-border border overflow-hidden">
-        <table className="sheet w-full text-sm">
+    <div className="p-3 overflow-hidden">
+      <div className="t-bg-card t-border border overflow-x-auto">
+        <table className="sheet text-sm w-max sm:w-full" style={{ minWidth: '480px' }}>
           <thead>
             <tr>
               <th className="w-48 text-left"></th>

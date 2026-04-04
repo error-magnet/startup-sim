@@ -79,7 +79,7 @@ export default function Dashboard({ state }) {
           </span>
         </div>
       )}
-      <div className="grid grid-cols-3 gap-px" style={{ background: 'var(--bg-border)' }}>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-px" style={{ background: 'var(--bg-border)' }}>
         <MetricCard
           label="Bank Balance"
           value={formatCR(state.bank)}
@@ -98,7 +98,7 @@ export default function Dashboard({ state }) {
           color={red}
         />
       </div>
-      <div className="grid grid-cols-3 gap-px" style={{ background: 'var(--bg-border)' }}>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-px" style={{ background: 'var(--bg-border)' }}>
         <MetricCard
           label="Headcount"
           value={activeEmployees.length}

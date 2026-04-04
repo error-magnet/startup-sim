@@ -69,3 +69,11 @@ body {
 ::-webkit-scrollbar-track { background: var(--bg-card); }
 ::-webkit-scrollbar-thumb { background: var(--bg-border); border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--txt-muted); }
+
+/* Mobile: prevent horizontal overflow */
+@media (max-width: 639px) {
+  .sheet td, .sheet th {
+    padding: 4px 6px;
+    white-space: nowrap;
+  }
+}
