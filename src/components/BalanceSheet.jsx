@@ -71,8 +71,8 @@ export default function BalanceSheet({ state }) {
 
   return (
     <div className="p-3">
-      <div className="t-bg-card t-border border overflow-hidden">
-        <table className="sheet w-full text-sm">
+      <div className="t-bg-card t-border border overflow-x-auto">
+        <table className="sheet w-full text-sm min-w-[480px]">
           <thead>
             <tr>
               <th className="w-48 text-left"></th>

@@ -96,10 +96,13 @@ function ProjectCard({ project, state, dispatch, unassigned }) {
   return (
     <div className="flex flex-col gap-3">
       {/* Project header */}
-      <div className="t-bg-card t-border border px-3 py-2 flex items-center justify-between">
+      <div className="t-bg-card t-border border px-3 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
         <div className="flex items-center gap-2">
           <span className="font-semibold t-text">{project.name}</span>
           <span className="text-xs t-text-muted">({project.type})</span>
+          <span className={`sm:hidden ${isComplete ? 'text-accent-green' : 'text-accent-yellow'} text-sm`}>
+            {isComplete ? 'Complete' : 'Active'}
+          </span>
         </div>
         <div className="flex items-center gap-4 text-sm">
           {!isComplete && (
@@ -112,7 +115,7 @@ function ProjectCard({ project, state, dispatch, unassigned }) {
               </span>
             </>
           )}
-          <span className={isComplete ? 'text-accent-green' : 'text-accent-yellow'}>
+          <span className={`hidden sm:inline ${isComplete ? 'text-accent-green' : 'text-accent-yellow'}`}>
             {isComplete ? 'Complete' : 'Active'}
           </span>
         </div>
@@ -124,8 +127,8 @@ function ProjectCard({ project, state, dispatch, unassigned }) {
         </div>
       ) : (
         <>
-          <div className="t-bg-card t-border border overflow-hidden">
-            <table className="sheet w-full text-sm">
+          <div className="t-bg-card t-border border overflow-x-auto">
+            <table className="sheet w-full text-sm min-w-[520px]">
               <thead>
                 <tr>
                   <th className="text-left">Epic</th>
@@ -144,7 +147,7 @@ function ProjectCard({ project, state, dispatch, unassigned }) {
             </table>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {project.epics.map((epic) => (
               <AssignmentPanel
                 key={epic.id}

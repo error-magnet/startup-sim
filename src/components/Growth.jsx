@@ -53,7 +53,7 @@ function ProductPanel({ product, dispatch }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* Pricing */}
         <div className="t-bg-card t-border border overflow-hidden">
           <table className="sheet w-full text-sm">
@@ -103,7 +103,7 @@ function ProductPanel({ product, dispatch }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {/* Users */}
         <div className="t-bg-card t-border border overflow-hidden">
           <table className="sheet w-full text-sm">
