@@ -69,9 +69,9 @@ export default function HRMS({ state }) {
   }
 
   return (
-    <div className="p-3 min-w-0">
+    <div className="p-3 overflow-hidden">
       <div className="t-bg-card t-border border overflow-x-auto">
-        <table className="sheet w-full text-sm min-w-[720px]">
+        <table className="sheet text-sm w-max sm:w-full" style={{ minWidth: '720px' }}>
           <thead>
             <tr>
               {HEADERS.map((h) => (

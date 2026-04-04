@@ -128,7 +128,7 @@ function ProjectCard({ project, state, dispatch, unassigned }) {
       ) : (
         <>
           <div className="t-bg-card t-border border overflow-x-auto">
-            <table className="sheet w-full text-sm min-w-[520px]">
+            <table className="sheet text-sm w-max sm:w-full" style={{ minWidth: '520px' }}>
               <thead>
                 <tr>
                   <th className="text-left">Epic</th>
@@ -170,7 +170,7 @@ export default function Projects({ state, dispatch }) {
   const unassigned = state.employees.filter((e) => !e.assignment && e.status === 'Active');
 
   return (
-    <div className="p-3 flex flex-col gap-4 min-w-0">
+    <div className="p-3 flex flex-col gap-4 overflow-hidden">
       {state.devProjects.map((proj) => (
         <ProjectCard key={proj.id} project={proj} state={state} dispatch={dispatch} unassigned={unassigned} />
       ))}

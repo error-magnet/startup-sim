@@ -271,7 +271,7 @@ export default function App() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto min-w-0">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
         {state.activeTab === 'dashboard' && <Dashboard state={state} />}
         {state.activeTab === 'growth' && <Growth state={state} dispatch={dispatch} />}
         {state.activeTab === 'projects' && <Projects state={state} dispatch={dispatch} />}
