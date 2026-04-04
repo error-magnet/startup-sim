@@ -83,7 +83,7 @@ export default function Dashboard({ state }) {
         <MetricCard
           label="Bank Balance"
           value={formatCR(state.bank)}
-          color={state.bank < 100000 ? red : state.bank < 300000 ? yellow : green}
+          color={state.bank < 1000000 ? red : state.bank < 3000000 ? yellow : green}
         />
         <MetricCard
           label="Runway"

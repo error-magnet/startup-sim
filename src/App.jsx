@@ -86,7 +86,7 @@ function NegotiationModal({ employee, dispatch }) {
         </table>
         <div className="flex items-center gap-2 text-sm">
           <span className="t-text-secondary">Offer:</span>
-          <span className="t-text-muted">CR</span>
+          <span className="t-text-muted">₹</span>
           <input
             value={offerSalary}
             onChange={(e) => setOfferSalary(e.target.value)}

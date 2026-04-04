@@ -62,7 +62,7 @@ function ProductPanel({ product, dispatch }) {
               <tr>
                 <td className="t-text-secondary">Monthly Price</td>
                 <td className="text-right">
-                  <span className="t-text-muted mr-1">CR</span>
+                  <span className="t-text-muted mr-1">₹</span>
                   <PriceInput
                     value={product.monthlyPrice}
                     onChange={(p) => dispatch({ type: 'SET_PRICE', productId: product.id, price: p })}

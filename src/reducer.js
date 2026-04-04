@@ -9,7 +9,7 @@ function makeAppifyMVP() {
     productId: 'appify',
     type: 'mvp',
     status: 'Active',
-    devCostPerWeek: 2000,
+    devCostPerWeek: 20000,
     totalDevSpend: 0,
     createdWeek: 1,
     completedWeek: null,
@@ -42,16 +42,16 @@ function makeDefaultProductConfig() {
   return {
     signupsPerMonth: 100,
     baseRetentionRate: 0.20,
-    basePrice: 5,
-    retentionDropPerCR: 0.04,
-    retentionGainPerCR: 0.02,
+    basePrice: 50,
+    retentionDropPerCR: 0.004,
+    retentionGainPerCR: 0.002,
     baseChurnRate: 0.20,
-    churnIncreasePerCR: 0.04,
-    churnDecreasePerCR: 0.02,
+    churnIncreasePerCR: 0.004,
+    churnDecreasePerCR: 0.002,
     freeTrialWeeks: 4,
     weeklyVariance: 0.03,
-    infraCostPerUser: 0.5,
-    infraBaseCost: 500,
+    infraCostPerUser: 5,
+    infraBaseCost: 5000,
   };
 }
 
@@ -62,7 +62,7 @@ function createLiveProduct(productId, name, type, launchedWeek) {
     type,
     status: 'Live',
     launchedWeek,
-    monthlyPrice: 5,
+    monthlyPrice: 50,
     config: makeDefaultProductConfig(),
     cohorts: [],
     financials: { totalRevenue: 0, totalInfraCost: 0 },
@@ -78,7 +78,7 @@ function createInfraProject(productId, productName, yearNum, createdWeek) {
     productId,
     type: 'infra',
     status: 'Active',
-    devCostPerWeek: 1000,
+    devCostPerWeek: 10000,
     totalDevSpend: 0,
     createdWeek,
     completedWeek: null,
@@ -171,7 +171,7 @@ export const initialState = {
   totalWeeks: 1,
   paused: true,
   speed: 1,
-  bank: 1_000_000,
+  bank: 10_000_000,
   companyName: `${companyName} Inc.`,
   theme: 'dark',
   employees: initialEmployees,
@@ -253,7 +253,7 @@ export function gameReducer(state, action) {
 
       log.unshift({
         week: newWeek, year: newYear,
-        message: `Payroll processed — CR ${Math.round(weeklyPayroll).toLocaleString('en-US')} debited`,
+        message: `Payroll processed — ₹${Math.round(weeklyPayroll).toLocaleString('en-IN')} debited`,
       });
 
       // 3. Process dev projects
@@ -414,9 +414,9 @@ export function gameReducer(state, action) {
         for (const emp of employees) {
           if (emp.status !== 'Active') continue;
 
-          const salaryDelta = emp.salary - (emp.previousSalary + 100);
+          const salaryDelta = emp.salary - (emp.previousSalary + 1000);
           const salaryPenalty = salaryDelta < 0
-            ? (Math.abs(salaryDelta) / 1000) * emp.personality.salaryPriority
+            ? (Math.abs(salaryDelta) / 10000) * emp.personality.salaryPriority
             : 0;
 
           emp.happiness = Math.max(0, Math.min(100,
@@ -544,7 +544,7 @@ export function gameReducer(state, action) {
       const emp = state.employees.find((e) => e.id === employeeId);
       if (!emp || emp.status !== 'Negotiating') return state;
 
-      const minRaise = emp.personality.salaryPriority * 1000;
+      const minRaise = emp.personality.salaryPriority * 10000;
       const accepted = newSalary >= emp.salary + minRaise;
 
       let newEmployees;
@@ -559,7 +559,7 @@ export function gameReducer(state, action) {
         );
         newLog.unshift({
           week: state.week, year: state.year,
-          message: `${emp.name} accepted raise to CR ${newSalary.toLocaleString('en-US')}`,
+          message: `${emp.name} accepted raise to ₹${newSalary.toLocaleString('en-IN')}`,
         });
       } else {
         newDevProjects = removeEmployeeFromAll(employeeId, state.devProjects);

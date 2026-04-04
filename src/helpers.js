@@ -4,12 +4,12 @@ const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 export function formatCR(amount) {
   const abs = Math.abs(amount);
-  const formatted = abs.toLocaleString('en-US', {
+  const formatted = abs.toLocaleString('en-IN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  if (amount < 0) return `(CR ${formatted})`;
-  return `CR ${formatted}`;
+  if (amount < 0) return `(-₹${formatted})`;
+  return `₹${formatted}`;
 }
 
 export function generateName(existingNames) {
@@ -72,8 +72,8 @@ export function generateInitialEmployees(count) {
     employees.push({
       id: i + 1,
       name,
-      salary: 50000,
-      previousSalary: 50000,
+      salary: 500000,
+      previousSalary: 500000,
       status: 'Active',
       joinedWeek: 1,
       assignment: null,
