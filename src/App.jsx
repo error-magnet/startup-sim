@@ -118,6 +118,7 @@ function NegotiationModal({ employee, dispatch, sym }) {
 
 export default function App() {
   const [state, dispatch] = useReducer(gameReducer, initialState);
+  const [showIntro, setShowIntro] = useState(true);
   const intervalRef = useRef(null);
 
   useEffect(() => {
@@ -286,6 +287,25 @@ export default function App() {
       {/* Negotiation modal */}
       {negotiatingEmployee && (
         <NegotiationModal key={negotiatingEmployee.id} employee={negotiatingEmployee} dispatch={dispatch} sym={state.currency.symbol} />
+      )}
+
+      {/* Intro popup */}
+      {showIntro && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.7)' }}>
+          <button
+            onClick={() => {
+              setShowIntro(false);
+              dispatch({ type: 'TOGGLE_PAUSE' });
+            }}
+            className="t-bg-card t-border border p-6 max-w-sm w-[calc(100%-2rem)] mx-4 sm:mx-0 text-center flex flex-col gap-3 cursor-pointer hover:border-accent-blue transition-colors"
+          >
+            <div className="text-accent-cyan font-mono text-lg font-bold">{state.companyName}</div>
+            <div className="t-text-secondary text-sm leading-relaxed">
+              Your startup is live. Assign people to projects to start building, and don't go bankrupt! Pause time whenever you want.
+            </div>
+            <div className="mt-1 text-accent-green font-semibold text-sm">Click to start!</div>
+          </button>
+        </div>
       )}
 
       {/* Game Over overlay */}

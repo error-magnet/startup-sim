@@ -138,7 +138,7 @@ export default function BalanceSheet({ state }) {
             {[...devProjectIds].map((id) => (
               <Row
                 key={`dev-${id}`}
-                label={`Dev: ${devProjectNames[id] || id}`}
+                label={`Project: ${devProjectNames[id] || id}`}
                 years={years}
                 yearlyData={(y) => (getExp(y).devProjects || {})[id] || 0}
                 weekData={(wkExp.devProjects || {})[id] || 0}

@@ -112,7 +112,7 @@ function ProjectCard({ project, state, dispatch, unassigned }) {
           {!isComplete && (
             <>
               <span className="t-text-secondary">
-                Dev Cost: <span className="text-accent-red font-mono">{fmt(project.devCostPerMonth)}/mo</span>
+                Project Cost: <span className="text-accent-red font-mono">{fmt(project.devCostPerMonth)}/mo</span>
               </span>
               <span className="t-text-secondary">
                 Spent: <span className="text-accent-red font-mono">{fmt(project.totalDevSpend)}</span>
@@ -127,7 +127,7 @@ function ProjectCard({ project, state, dispatch, unassigned }) {
 
       {isComplete ? (
         <div className="t-bg-card t-border border px-3 py-2 text-sm t-text-muted">
-          All epics completed. Total dev spend: <span className="font-mono">{fmt(project.totalDevSpend)}</span>
+          All epics completed. Total project spend: <span className="font-mono">{fmt(project.totalDevSpend)}</span>
         </div>
       ) : (
         <>

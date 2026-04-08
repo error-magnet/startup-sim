@@ -93,7 +93,7 @@ export default function Dashboard({ state }) {
         <MetricCard
           label="Monthly Burn"
           value={fmt(monthlyBurn)}
-          sub={`Sal ${fmt(monthlyPayroll)}${monthlyDevCost ? ` + Dev ${fmt(monthlyDevCost)}` : ''}${monthlyInfra ? ` + Infra ${fmt(monthlyInfra)}` : ''}`}
+          sub={`Sal ${fmt(monthlyPayroll)}${monthlyDevCost ? ` + Proj ${fmt(monthlyDevCost)}` : ''}${monthlyInfra ? ` + Infra ${fmt(monthlyInfra)}` : ''}`}
           color={red}
         />
       </div>

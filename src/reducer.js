@@ -51,7 +51,7 @@ function makeDefaultProductConfig() {
     freeTrialWeeks: 4,
     weeklyVariance: 0.03,
     infraCostPerUser: 0.5,
-    infraBaseCost: 50000,
+    infraBaseCost: 0,
   };
 }
 
@@ -78,7 +78,7 @@ function createInfraProject(productId, productName, yearNum, createdWeek) {
     productId,
     type: 'infra',
     status: 'Active',
-    devCostPerMonth: 1000,
+    devCostPerMonth: 50000,
     totalDevSpend: 0,
     createdWeek,
     completedWeek: null,

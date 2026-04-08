@@ -200,7 +200,7 @@ export default function Admin({ state, dispatch }) {
           <table className="sheet w-full">
             <tbody>
               <NumberField
-                label="Dev Cost / Month"
+                label="Project Cost / Month"
                 value={proj.devCostPerMonth}
                 onChange={(v) => set(['devProjects', proj.id, 'devCostPerMonth'], v)}
                 step={100}
