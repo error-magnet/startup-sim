@@ -9,7 +9,7 @@ function makeAppifyMVP() {
     productId: 'appify',
     type: 'mvp',
     status: 'Active',
-    devCostPerWeek: 2000,
+    devCostPerMonth: 2000,
     totalDevSpend: 0,
     createdWeek: 1,
     completedWeek: null,
@@ -51,7 +51,7 @@ function makeDefaultProductConfig() {
     freeTrialWeeks: 4,
     weeklyVariance: 0.03,
     infraCostPerUser: 0.5,
-    infraBaseCost: 500,
+    infraBaseCost: 50000,
   };
 }
 
@@ -78,7 +78,7 @@ function createInfraProject(productId, productName, yearNum, createdWeek) {
     productId,
     type: 'infra',
     status: 'Active',
-    devCostPerWeek: 1000,
+    devCostPerMonth: 1000,
     totalDevSpend: 0,
     createdWeek,
     completedWeek: null,
@@ -180,8 +180,8 @@ export const initialState = {
   log: [{ week: 1, year: 1, message: 'Game started with 2 employees' }],
   yearlyExpenses: { 1: makeInitialYearExpenses() },
   yearlyRevenue: { 1: makeInitialYearRevenue() },
-  currentWeekExpenses: { salaries: 0, devProjects: {}, productInfra: {} },
-  currentWeekRevenue: { products: {} },
+  currentMonthExpenses: { salaries: 0, devProjects: {}, productInfra: {} },
+  currentMonthRevenue: { products: {} },
   gameOver: false,
   activeTab: 'dashboard',
   negotiatingEmployeeId: null,
@@ -246,16 +246,19 @@ export function gameReducer(state, action) {
       const weekExpProductInfra = {};
       const weekRevProducts = {};
 
-      // 2. Process payroll
+      // 2. Process payroll (monthly — every 4 weeks)
+      const isMonthEnd = newTotalWeeks % 4 === 0;
       const activeEmps = employees.filter((e) => e.status === 'Active');
-      const weeklyPayroll = activeEmps.reduce((sum, e) => sum + e.salary / 52, 0);
-      bankDelta -= weeklyPayroll;
-      yearExp.salaries += weeklyPayroll;
+      if (isMonthEnd) {
+        const monthlyPayroll = activeEmps.reduce((sum, e) => sum + e.salary, 0);
+        bankDelta -= monthlyPayroll;
+        yearExp.salaries += monthlyPayroll;
 
-      log.unshift({
-        week: newWeek, year: newYear,
-        message: `Payroll processed — ${state.currency.symbol}${Math.round(weeklyPayroll).toLocaleString('en-US')} debited`,
-      });
+        log.unshift({
+          week: newWeek, year: newYear,
+          message: `Payroll processed — ${state.currency.symbol}${Math.round(monthlyPayroll).toLocaleString('en-US')} debited`,
+        });
+      }
 
       // 3. Process dev projects
       const freedEmployeeIds = new Set();
@@ -284,12 +287,12 @@ export function gameReducer(state, action) {
           }
         }
 
-        // Charge dev cost if any epics were in progress
-        if (hadInProgressEpics) {
-          bankDelta -= proj.devCostPerWeek;
-          proj.totalDevSpend += proj.devCostPerWeek;
-          weekExpDevProjects[proj.id] = (weekExpDevProjects[proj.id] || 0) + proj.devCostPerWeek;
-          yearExp.devProjects[proj.id] = (yearExp.devProjects[proj.id] || 0) + proj.devCostPerWeek;
+        // Charge dev cost monthly
+        if (hadInProgressEpics && isMonthEnd) {
+          bankDelta -= proj.devCostPerMonth;
+          proj.totalDevSpend += proj.devCostPerMonth;
+          weekExpDevProjects[proj.id] = (weekExpDevProjects[proj.id] || 0) + proj.devCostPerMonth;
+          yearExp.devProjects[proj.id] = (yearExp.devProjects[proj.id] || 0) + proj.devCostPerMonth;
         }
 
         // Check if all epics are now complete
@@ -393,20 +396,21 @@ export function gameReducer(state, action) {
           });
         }
 
-        // Weekly revenue
-        const stats = getProductUserStats(product);
-        const revenue = (stats.payingUsers * product.monthlyPrice) / 4;
-        bankDelta += revenue;
-        product.financials.totalRevenue += revenue;
-        weekRevProducts[product.id] = (weekRevProducts[product.id] || 0) + revenue;
-        yearRev.products[product.id] = (yearRev.products[product.id] || 0) + revenue;
+        // Monthly revenue & infra cost
+        if (isMonthEnd) {
+          const stats = getProductUserStats(product);
+          const revenue = stats.payingUsers * product.monthlyPrice;
+          bankDelta += revenue;
+          product.financials.totalRevenue += revenue;
+          weekRevProducts[product.id] = (weekRevProducts[product.id] || 0) + revenue;
+          yearRev.products[product.id] = (yearRev.products[product.id] || 0) + revenue;
 
-        // Weekly infra cost
-        const infraCost = cfg.infraBaseCost + stats.totalActive * cfg.infraCostPerUser;
-        bankDelta -= infraCost;
-        product.financials.totalInfraCost += infraCost;
-        weekExpProductInfra[product.id] = (weekExpProductInfra[product.id] || 0) + infraCost;
-        yearExp.productInfra[product.id] = (yearExp.productInfra[product.id] || 0) + infraCost;
+          const infraCost = cfg.infraBaseCost + stats.totalActive * cfg.infraCostPerUser;
+          bankDelta -= infraCost;
+          product.financials.totalInfraCost += infraCost;
+          weekExpProductInfra[product.id] = (weekExpProductInfra[product.id] || 0) + infraCost;
+          yearExp.productInfra[product.id] = (yearExp.productInfra[product.id] || 0) + infraCost;
+        }
       }
 
       // 5. Yearly boundary: happiness and attrition
@@ -462,8 +466,10 @@ export function gameReducer(state, action) {
         products,
         yearlyExpenses: { ...state.yearlyExpenses, [newYear]: yearExp },
         yearlyRevenue: { ...state.yearlyRevenue, [newYear]: yearRev },
-        currentWeekExpenses: { salaries: weeklyPayroll, devProjects: weekExpDevProjects, productInfra: weekExpProductInfra },
-        currentWeekRevenue: { products: weekRevProducts },
+        currentMonthExpenses: isMonthEnd
+          ? { salaries: activeEmps.reduce((s, e) => s + e.salary, 0), devProjects: weekExpDevProjects, productInfra: weekExpProductInfra }
+          : state.currentMonthExpenses,
+        currentMonthRevenue: isMonthEnd ? { products: weekRevProducts } : state.currentMonthRevenue,
         log,
         gameOver,
         paused: gameOver || pendingNegotiations.length > 0 ? true : state.paused,

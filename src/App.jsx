@@ -75,7 +75,7 @@ function NegotiationModal({ employee, dispatch, sym }) {
             </tr>
             <tr>
               <td className="t-text-secondary">Current Salary</td>
-              <td className="text-right font-mono">{fmt(employee.salary)}/yr</td>
+              <td className="text-right font-mono">{fmt(employee.salary)}/mo</td>
             </tr>
             <tr>
               <td className="t-text-secondary">Salary Priority</td>
@@ -95,7 +95,7 @@ function NegotiationModal({ employee, dispatch, sym }) {
             onChange={(e) => setOfferSalary(e.target.value)}
             className="w-24 bg-transparent t-border border px-2 py-0.5 text-right font-mono text-sm t-text outline-none focus:border-accent-blue"
           />
-          <span className="t-text-muted">/yr</span>
+          <span className="t-text-muted">/mo</span>
         </div>
         <div className="flex gap-2">
           <button

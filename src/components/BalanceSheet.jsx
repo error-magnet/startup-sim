@@ -39,9 +39,9 @@ export default function BalanceSheet({ state }) {
     const rev = state.yearlyRevenue[y] || {};
     for (const id of Object.keys(rev.products || {})) productIds.add(id);
   }
-  for (const id of Object.keys(state.currentWeekExpenses.devProjects || {})) devProjectIds.add(id);
-  for (const id of Object.keys(state.currentWeekExpenses.productInfra || {})) productIds.add(id);
-  for (const id of Object.keys(state.currentWeekRevenue.products || {})) productIds.add(id);
+  for (const id of Object.keys(state.currentMonthExpenses.devProjects || {})) devProjectIds.add(id);
+  for (const id of Object.keys(state.currentMonthExpenses.productInfra || {})) productIds.add(id);
+  for (const id of Object.keys(state.currentMonthRevenue.products || {})) productIds.add(id);
 
   // Name lookups
   const devProjectNames = {};
@@ -66,8 +66,8 @@ export default function BalanceSheet({ state }) {
     return total;
   };
 
-  const wkExp = state.currentWeekExpenses;
-  const wkRev = state.currentWeekRevenue;
+  const wkExp = state.currentMonthExpenses;
+  const wkRev = state.currentMonthRevenue;
   const wkTotalExp = (wkExp.salaries || 0)
     + Object.values(wkExp.devProjects || {}).reduce((s, v) => s + v, 0)
     + Object.values(wkExp.productInfra || {}).reduce((s, v) => s + v, 0);
@@ -88,7 +88,7 @@ export default function BalanceSheet({ state }) {
                   Year {y} {y === state.year ? '(to date)' : ''}
                 </th>
               ))}
-              <th className="text-right w-36 t-border border-l">Current Week</th>
+              <th className="text-right w-36 t-border border-l">Current Month</th>
             </tr>
           </thead>
           <tbody>

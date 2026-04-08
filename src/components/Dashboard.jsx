@@ -14,18 +14,18 @@ function MetricCard({ label, value, sub, color = 'var(--txt-primary)' }) {
 export default function Dashboard({ state }) {
   const fmt = (v) => formatCR(v, state.currency.symbol);
   const activeEmployees = state.employees.filter((e) => e.status !== 'Left');
-  const weeklyPayroll = activeEmployees.reduce((sum, e) => sum + e.salary / 52, 0);
+  const monthlyPayroll = activeEmployees.reduce((sum, e) => sum + e.salary, 0);
 
-  let weeklyDevCost = 0;
+  let monthlyDevCost = 0;
   for (const proj of state.devProjects) {
     if (proj.status !== 'Active') continue;
     if (proj.epics.some((e) => e.status === 'In Progress')) {
-      weeklyDevCost += proj.devCostPerWeek;
+      monthlyDevCost += proj.devCostPerMonth;
     }
   }
 
-  let weeklyInfra = 0;
-  let weeklyRevenue = 0;
+  let monthlyInfra = 0;
+  let monthlyRevenue = 0;
   let totalPayingAll = 0;
   let totalActiveAll = 0;
   let mrr = 0;
@@ -33,21 +33,19 @@ export default function Dashboard({ state }) {
   for (const p of state.products) {
     const stats = getProductUserStats(p);
     const cfg = p.config;
-    weeklyInfra += cfg.infraBaseCost + stats.totalActive * cfg.infraCostPerUser;
-    weeklyRevenue += (stats.payingUsers * p.monthlyPrice) / 4;
+    monthlyInfra += cfg.infraBaseCost + stats.totalActive * cfg.infraCostPerUser;
+    monthlyRevenue += stats.payingUsers * p.monthlyPrice;
     totalPayingAll += stats.payingUsers;
     totalActiveAll += stats.totalActive;
     mrr += stats.payingUsers * p.monthlyPrice;
   }
 
-  const weeklyBurn = weeklyPayroll + weeklyDevCost + weeklyInfra;
-  const netWeekly = weeklyRevenue - weeklyBurn;
-  const effectiveBurn = Math.max(0, -netWeekly);
+  const monthlyBurn = monthlyPayroll + monthlyDevCost + monthlyInfra;
+  const netMonthly = monthlyRevenue - monthlyBurn;
+  const effectiveBurn = Math.max(0, -netMonthly);
 
-  const runwayWeeks = effectiveBurn > 0 ? Math.floor(state.bank / effectiveBurn) : Infinity;
-  const runwayMonths = Math.floor(runwayWeeks / 4);
-  const runwayRemWeeks = runwayWeeks % 4;
-  const runwayStr = runwayWeeks === Infinity ? '∞' : `${runwayMonths}mo ${runwayRemWeeks}wk`;
+  const runwayMonths = effectiveBurn > 0 ? Math.floor(state.bank / effectiveBurn) : Infinity;
+  const runwayStr = runwayMonths === Infinity ? '∞' : `${runwayMonths} months`;
 
   const green = '#00d26a', red = '#ff4757', yellow = '#ffc048', blue = '#3b82f6';
 
@@ -89,13 +87,13 @@ export default function Dashboard({ state }) {
         <MetricCard
           label="Runway"
           value={runwayStr}
-          sub={netWeekly >= 0 ? 'Net positive' : `${fmt(effectiveBurn)}/wk net burn`}
-          color={runwayWeeks < 26 ? red : runwayWeeks < 52 ? yellow : 'var(--txt-primary)'}
+          sub={netMonthly >= 0 ? 'Net positive' : `${fmt(effectiveBurn)}/mo net burn`}
+          color={runwayMonths < 6 ? red : runwayMonths < 12 ? yellow : 'var(--txt-primary)'}
         />
         <MetricCard
-          label="Weekly Burn"
-          value={fmt(weeklyBurn)}
-          sub={`Sal ${fmt(weeklyPayroll)}${weeklyDevCost ? ` + Dev ${fmt(weeklyDevCost)}` : ''}${weeklyInfra ? ` + Infra ${fmt(weeklyInfra)}` : ''}`}
+          label="Monthly Burn"
+          value={fmt(monthlyBurn)}
+          sub={`Sal ${fmt(monthlyPayroll)}${monthlyDevCost ? ` + Dev ${fmt(monthlyDevCost)}` : ''}${monthlyInfra ? ` + Infra ${fmt(monthlyInfra)}` : ''}`}
           color={red}
         />
       </div>
@@ -103,12 +101,11 @@ export default function Dashboard({ state }) {
         <MetricCard
           label="Headcount"
           value={activeEmployees.length}
-          sub={`${fmt(activeEmployees.reduce((s, e) => s + e.salary, 0))}/yr total comp`}
+          sub={`${fmt(activeEmployees.reduce((s, e) => s + e.salary, 0))}/mo total comp`}
         />
         <MetricCard
           label="MRR"
           value={fmt(mrr)}
-          sub={mrr > 0 ? `${fmt(mrr / 4)}/wk` : null}
           color={mrr > 0 ? green : 'var(--txt-muted)'}
         />
         <MetricCard
@@ -125,10 +122,10 @@ export default function Dashboard({ state }) {
           color={appifyColor}
         />
         <MetricCard
-          label="Weekly Revenue"
-          value={fmt(weeklyRevenue)}
-          sub={weeklyRevenue > 0 ? `Net: ${fmt(netWeekly)}/wk` : null}
-          color={weeklyRevenue > 0 ? green : 'var(--txt-muted)'}
+          label="Monthly Revenue"
+          value={fmt(monthlyRevenue)}
+          sub={monthlyRevenue > 0 ? `Net: ${fmt(netMonthly)}/mo` : null}
+          color={monthlyRevenue > 0 ? green : 'var(--txt-muted)'}
         />
       </div>
 

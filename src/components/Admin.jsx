@@ -200,9 +200,9 @@ export default function Admin({ state, dispatch }) {
           <table className="sheet w-full">
             <tbody>
               <NumberField
-                label="Dev Cost / Week"
-                value={proj.devCostPerWeek}
-                onChange={(v) => set(['devProjects', proj.id, 'devCostPerWeek'], v)}
+                label="Dev Cost / Month"
+                value={proj.devCostPerMonth}
+                onChange={(v) => set(['devProjects', proj.id, 'devCostPerMonth'], v)}
                 step={100}
                 min={0}
                 suffix={sym}
@@ -254,7 +254,7 @@ export default function Admin({ state, dispatch }) {
                     onChange={(v) => set(['employees', emp.id, 'salary'], v)}
                     step={1000}
                     min={0}
-                    suffix={`${sym}/yr`}
+                    suffix={`${sym}/mo`}
                   />
                   <NumberField
                     label="Happiness"

@@ -109,7 +109,7 @@ function ProjectCard({ project, state, dispatch, unassigned }) {
           {!isComplete && (
             <>
               <span className="t-text-secondary">
-                Dev Cost: <span className="text-accent-red font-mono">{fmt(project.devCostPerWeek)}/wk</span>
+                Dev Cost: <span className="text-accent-red font-mono">{fmt(project.devCostPerMonth)}/mo</span>
               </span>
               <span className="t-text-secondary">
                 Spent: <span className="text-accent-red font-mono">{fmt(project.totalDevSpend)}</span>

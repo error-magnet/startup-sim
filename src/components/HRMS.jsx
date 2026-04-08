@@ -6,8 +6,7 @@ const HEADERS = [
   { key: 'id', label: '#', align: 'text-left' },
   { key: 'name', label: 'Name', align: 'text-left' },
   { key: 'assignment', label: 'Assignment', align: 'text-left' },
-  { key: 'salary', label: 'Salary (Ann)', align: 'text-right' },
-  { key: 'salaryW', label: 'Salary (Wk)', align: 'text-right' },
+  { key: 'salary', label: 'Salary (Mo)', align: 'text-right' },
   { key: 'happiness', label: 'Happiness', align: 'text-right' },
   { key: 'salaryPriority', label: 'Sal.Pri', align: 'text-center' },
   { key: 'restlessness', label: 'Restless', align: 'text-center' },
@@ -53,7 +52,7 @@ export default function HRMS({ state }) {
   const totalAnnual = state.employees.reduce(
     (s, e) => s + (e.status !== 'Left' ? e.salary : 0), 0
   );
-  const totalWeekly = totalAnnual / 52;
+  const totalMonthly = totalAnnual;
 
   function getAssignmentLabel(emp) {
     if (!emp.assignment) return 'Unassigned';
@@ -99,7 +98,6 @@ export default function HRMS({ state }) {
                   </span>
                 </td>
                 <td className="text-right font-mono">{fmt(emp.salary)}</td>
-                <td className="text-right font-mono">{fmt(emp.salary / 52)}</td>
                 <td className={`text-right font-mono ${happinessColor(emp.happiness)}`}>
                   {emp.happiness.toFixed(0)}
                 </td>
@@ -121,8 +119,7 @@ export default function HRMS({ state }) {
               <td></td>
               <td className="t-text">Total ({activeCount} active)</td>
               <td></td>
-              <td className="text-right text-accent-cyan font-mono">{fmt(totalAnnual)}</td>
-              <td className="text-right text-accent-cyan font-mono">{fmt(totalWeekly)}</td>
+              <td className="text-right text-accent-cyan font-mono">{fmt(totalMonthly)}</td>
               <td colSpan={5}></td>
             </tr>
           </tfoot>

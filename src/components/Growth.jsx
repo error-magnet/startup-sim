@@ -29,9 +29,9 @@ function ProductPanel({ product, dispatch, sym }) {
   const stats = getProductUserStats(product);
   const retentionRate = calcRetentionRate(cfg, product.monthlyPrice);
   const churnRate = calcChurnRate(cfg, product.monthlyPrice);
-  const weeklyRevenue = (stats.payingUsers * product.monthlyPrice) / 4;
-  const weeklyInfra = cfg.infraBaseCost + stats.totalActive * cfg.infraCostPerUser;
-  const weeklyPnL = weeklyRevenue - weeklyInfra;
+  const monthlyRevenue = stats.payingUsers * product.monthlyPrice;
+  const monthlyInfra = cfg.infraBaseCost + stats.totalActive * cfg.infraCostPerUser;
+  const monthlyPnL = monthlyRevenue - monthlyInfra;
   const mrr = stats.payingUsers * product.monthlyPrice;
   const lm = product.lastMonthStats;
   const netChange = lm.converted - lm.churned;
@@ -92,8 +92,8 @@ function ProductPanel({ product, dispatch, sym }) {
                 <td className="text-right text-accent-green font-mono font-semibold">{fmt(mrr)}</td>
               </tr>
               <tr>
-                <td className="t-text-secondary">Weekly Rev</td>
-                <td className="text-right text-accent-green font-mono">{fmt(weeklyRevenue)}</td>
+                <td className="t-text-secondary">Monthly Rev</td>
+                <td className="text-right text-accent-green font-mono">{fmt(monthlyRevenue)}</td>
               </tr>
               <tr>
                 <td className="t-text-secondary">Total Rev</td>
@@ -133,16 +133,16 @@ function ProductPanel({ product, dispatch, sym }) {
             <tbody>
               <tr>
                 <td className="t-text-secondary">Infra Cost</td>
-                <td className="text-right text-accent-red font-mono">{fmt(weeklyInfra)}/wk</td>
+                <td className="text-right text-accent-red font-mono">{fmt(monthlyInfra)}/mo</td>
               </tr>
               <tr>
                 <td className="t-text-secondary">Total Infra</td>
                 <td className="text-right text-accent-red font-mono">{fmt(product.financials.totalInfraCost)}</td>
               </tr>
               <tr>
-                <td className="t-text-secondary">Weekly P&L</td>
-                <td className={`text-right font-semibold font-mono ${weeklyPnL >= 0 ? 'text-accent-green' : 'text-accent-red'}`}>
-                  {fmt(weeklyPnL)}
+                <td className="t-text-secondary">Monthly P&L</td>
+                <td className={`text-right font-semibold font-mono ${monthlyPnL >= 0 ? 'text-accent-green' : 'text-accent-red'}`}>
+                  {fmt(monthlyPnL)}
                 </td>
               </tr>
             </tbody>
