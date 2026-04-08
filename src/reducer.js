@@ -9,7 +9,7 @@ function makeAppifyMVP() {
     productId: 'appify',
     type: 'mvp',
     status: 'Active',
-    devCostPerMonth: 2000,
+    devCostPerMonth: 50000,
     totalDevSpend: 0,
     createdWeek: 1,
     completedWeek: null,
