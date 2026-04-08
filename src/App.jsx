@@ -6,13 +6,15 @@ import HRMS from './components/HRMS';
 import BalanceSheet from './components/BalanceSheet';
 import Projects from './components/Projects';
 import Growth from './components/Growth';
+import Admin from './components/Admin';
 
 const TABS = [
   { key: 'dashboard', label: 'Dashboard' },
   { key: 'growth', label: 'Growth' },
   { key: 'projects', label: 'Projects' },
   { key: 'hrms', label: 'HRMS' },
-  { key: 'balance', label: 'Balance Sheet' },
+  { key: 'balance', label: 'Finances' },
+  { key: 'admin', label: 'Admin' },
 ];
 
 function CompanyName({ name, dispatch }) {
@@ -57,7 +59,8 @@ function CompanyName({ name, dispatch }) {
   );
 }
 
-function NegotiationModal({ employee, dispatch }) {
+function NegotiationModal({ employee, dispatch, sym }) {
+  const fmt = (v) => formatCR(v, sym);
   const [offerSalary, setOfferSalary] = useState(String(employee.salary));
 
   return (
@@ -72,7 +75,7 @@ function NegotiationModal({ employee, dispatch }) {
             </tr>
             <tr>
               <td className="t-text-secondary">Current Salary</td>
-              <td className="text-right font-mono">{formatCR(employee.salary)}/yr</td>
+              <td className="text-right font-mono">{fmt(employee.salary)}/yr</td>
             </tr>
             <tr>
               <td className="t-text-secondary">Salary Priority</td>
@@ -277,11 +280,12 @@ export default function App() {
         {state.activeTab === 'projects' && <Projects state={state} dispatch={dispatch} />}
         {state.activeTab === 'hrms' && <HRMS state={state} />}
         {state.activeTab === 'balance' && <BalanceSheet state={state} />}
+        {state.activeTab === 'admin' && <Admin state={state} dispatch={dispatch} />}
       </div>
 
       {/* Negotiation modal */}
       {negotiatingEmployee && (
-        <NegotiationModal key={negotiatingEmployee.id} employee={negotiatingEmployee} dispatch={dispatch} />
+        <NegotiationModal key={negotiatingEmployee.id} employee={negotiatingEmployee} dispatch={dispatch} sym={state.currency.symbol} />
       )}
 
       {/* Game Over overlay */}

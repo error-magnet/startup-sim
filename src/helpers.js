@@ -2,14 +2,14 @@ const VOWELS = 'aeiou';
 const CONSONANTS = 'bcdfghjklmnpqrstvwxyz';
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
-export function formatCR(amount) {
+export function formatCR(amount, symbol = '₹') {
   const abs = Math.abs(amount);
   const formatted = abs.toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  if (amount < 0) return `(CR ${formatted})`;
-  return `CR ${formatted}`;
+  if (amount < 0) return `(${symbol}${formatted})`;
+  return `${symbol}${formatted}`;
 }
 
 export function generateName(existingNames) {

@@ -23,7 +23,8 @@ function PriceInput({ value, onChange }) {
   );
 }
 
-function ProductPanel({ product, dispatch }) {
+function ProductPanel({ product, dispatch, sym }) {
+  const fmt = (v) => formatCR(v, sym);
   const cfg = product.config;
   const stats = getProductUserStats(product);
   const retentionRate = calcRetentionRate(cfg, product.monthlyPrice);
@@ -62,7 +63,7 @@ function ProductPanel({ product, dispatch }) {
               <tr>
                 <td className="t-text-secondary">Monthly Price</td>
                 <td className="text-right">
-                  <span className="t-text-muted mr-1">CR</span>
+                  <span className="t-text-muted mr-1">{sym}</span>
                   <PriceInput
                     value={product.monthlyPrice}
                     onChange={(p) => dispatch({ type: 'SET_PRICE', productId: product.id, price: p })}
@@ -88,15 +89,15 @@ function ProductPanel({ product, dispatch }) {
             <tbody>
               <tr>
                 <td className="t-text-secondary">MRR</td>
-                <td className="text-right text-accent-green font-mono font-semibold">{formatCR(mrr)}</td>
+                <td className="text-right text-accent-green font-mono font-semibold">{fmt(mrr)}</td>
               </tr>
               <tr>
                 <td className="t-text-secondary">Weekly Rev</td>
-                <td className="text-right text-accent-green font-mono">{formatCR(weeklyRevenue)}</td>
+                <td className="text-right text-accent-green font-mono">{fmt(weeklyRevenue)}</td>
               </tr>
               <tr>
                 <td className="t-text-secondary">Total Rev</td>
-                <td className="text-right text-accent-green font-mono">{formatCR(product.financials.totalRevenue)}</td>
+                <td className="text-right text-accent-green font-mono">{fmt(product.financials.totalRevenue)}</td>
               </tr>
             </tbody>
           </table>
@@ -132,16 +133,16 @@ function ProductPanel({ product, dispatch }) {
             <tbody>
               <tr>
                 <td className="t-text-secondary">Infra Cost</td>
-                <td className="text-right text-accent-red font-mono">{formatCR(weeklyInfra)}/wk</td>
+                <td className="text-right text-accent-red font-mono">{fmt(weeklyInfra)}/wk</td>
               </tr>
               <tr>
                 <td className="t-text-secondary">Total Infra</td>
-                <td className="text-right text-accent-red font-mono">{formatCR(product.financials.totalInfraCost)}</td>
+                <td className="text-right text-accent-red font-mono">{fmt(product.financials.totalInfraCost)}</td>
               </tr>
               <tr>
                 <td className="t-text-secondary">Weekly P&L</td>
                 <td className={`text-right font-semibold font-mono ${weeklyPnL >= 0 ? 'text-accent-green' : 'text-accent-red'}`}>
-                  {formatCR(weeklyPnL)}
+                  {fmt(weeklyPnL)}
                 </td>
               </tr>
             </tbody>
@@ -195,7 +196,7 @@ export default function Growth({ state, dispatch }) {
   return (
     <div className="p-3 flex flex-col gap-4">
       {state.products.map((product) => (
-        <ProductPanel key={product.id} product={product} dispatch={dispatch} />
+        <ProductPanel key={product.id} product={product} dispatch={dispatch} sym={state.currency.symbol} />
       ))}
     </div>
   );

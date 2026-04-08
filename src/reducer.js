@@ -186,6 +186,7 @@ export const initialState = {
   activeTab: 'dashboard',
   negotiatingEmployeeId: null,
   pendingNegotiations: [],
+  currency: { symbol: '₹', name: 'Rupee' },
 };
 
 // === Helpers ===
@@ -253,7 +254,7 @@ export function gameReducer(state, action) {
 
       log.unshift({
         week: newWeek, year: newYear,
-        message: `Payroll processed — CR ${Math.round(weeklyPayroll).toLocaleString('en-US')} debited`,
+        message: `Payroll processed — ${state.currency.symbol}${Math.round(weeklyPayroll).toLocaleString('en-US')} debited`,
       });
 
       // 3. Process dev projects
@@ -559,7 +560,7 @@ export function gameReducer(state, action) {
         );
         newLog.unshift({
           week: state.week, year: state.year,
-          message: `${emp.name} accepted raise to CR ${newSalary.toLocaleString('en-US')}`,
+          message: `${emp.name} accepted raise to ${state.currency.symbol}${newSalary.toLocaleString('en-US')}`,
         });
       } else {
         newDevProjects = removeEmployeeFromAll(employeeId, state.devProjects);
@@ -646,6 +647,70 @@ export function gameReducer(state, action) {
       return { ...state, companyName: action.name };
     case 'TOGGLE_THEME':
       return { ...state, theme: state.theme === 'dark' ? 'light' : 'dark' };
+    case 'SET_CURRENCY':
+      return { ...state, currency: action.currency };
+    case 'ADMIN_SET': {
+      const { path, value } = action;
+      const s = { ...state };
+
+      // Top-level fields
+      if (path.length === 1) {
+        s[path[0]] = value;
+        return s;
+      }
+
+      // Products: ['products', productId, ...rest]
+      if (path[0] === 'products') {
+        const [, productId, ...rest] = path;
+        s.products = state.products.map((p) => {
+          if (p.id !== productId) return p;
+          const np = { ...p, config: { ...p.config } };
+          if (rest.length === 1) np[rest[0]] = value;
+          else if (rest[0] === 'config') np.config[rest[1]] = value;
+          return np;
+        });
+        return s;
+      }
+
+      // Dev projects: ['devProjects', projId, field]
+      if (path[0] === 'devProjects') {
+        const [, projId, field] = path;
+        s.devProjects = state.devProjects.map((p) =>
+          p.id === projId ? { ...p, [field]: value } : p
+        );
+        return s;
+      }
+
+      // Epics: ['epics', projId, epicId, field]
+      if (path[0] === 'epics') {
+        const [, projId, epicId, field] = path;
+        s.devProjects = state.devProjects.map((p) =>
+          p.id !== projId ? p : {
+            ...p,
+            epics: p.epics.map((e) =>
+              e.id === epicId ? { ...e, [field]: value } : e
+            ),
+          }
+        );
+        return s;
+      }
+
+      // Employees: ['employees', empId, ...rest]
+      if (path[0] === 'employees') {
+        const [, empId, ...rest] = path;
+        s.employees = state.employees.map((e) => {
+          if (e.id !== empId) return e;
+          const ne = { ...e, personality: { ...e.personality } };
+          if (rest.length === 1) ne[rest[0]] = value;
+          else if (rest[0] === 'personality') ne.personality[rest[1]] = value;
+          return ne;
+        });
+        return s;
+      }
+
+      return state;
+    }
+
     case 'RESTART': {
       const newEmps = generateInitialEmployees(10);
       const newName = generateCompanyName();
@@ -656,6 +721,7 @@ export function gameReducer(state, action) {
         devProjects: [makeAppifyMVP()],
         products: [],
         theme: state.theme,
+        currency: state.currency,
         log: [{ week: 1, year: 1, message: 'Game started with 10 employees' }],
         yearlyExpenses: { 1: makeInitialYearExpenses() },
         yearlyRevenue: { 1: makeInitialYearRevenue() },

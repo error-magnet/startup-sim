@@ -12,6 +12,7 @@ function MetricCard({ label, value, sub, color = 'var(--txt-primary)' }) {
 }
 
 export default function Dashboard({ state }) {
+  const fmt = (v) => formatCR(v, state.currency.symbol);
   const activeEmployees = state.employees.filter((e) => e.status !== 'Left');
   const weeklyPayroll = activeEmployees.reduce((sum, e) => sum + e.salary / 52, 0);
 
@@ -82,19 +83,19 @@ export default function Dashboard({ state }) {
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-px" style={{ background: 'var(--bg-border)' }}>
         <MetricCard
           label="Bank Balance"
-          value={formatCR(state.bank)}
+          value={fmt(state.bank)}
           color={state.bank < 100000 ? red : state.bank < 300000 ? yellow : green}
         />
         <MetricCard
           label="Runway"
           value={runwayStr}
-          sub={netWeekly >= 0 ? 'Net positive' : `${formatCR(effectiveBurn)}/wk net burn`}
+          sub={netWeekly >= 0 ? 'Net positive' : `${fmt(effectiveBurn)}/wk net burn`}
           color={runwayWeeks < 26 ? red : runwayWeeks < 52 ? yellow : 'var(--txt-primary)'}
         />
         <MetricCard
           label="Weekly Burn"
-          value={formatCR(weeklyBurn)}
-          sub={`Sal ${formatCR(weeklyPayroll)}${weeklyDevCost ? ` + Dev ${formatCR(weeklyDevCost)}` : ''}${weeklyInfra ? ` + Infra ${formatCR(weeklyInfra)}` : ''}`}
+          value={fmt(weeklyBurn)}
+          sub={`Sal ${fmt(weeklyPayroll)}${weeklyDevCost ? ` + Dev ${fmt(weeklyDevCost)}` : ''}${weeklyInfra ? ` + Infra ${fmt(weeklyInfra)}` : ''}`}
           color={red}
         />
       </div>
@@ -102,12 +103,12 @@ export default function Dashboard({ state }) {
         <MetricCard
           label="Headcount"
           value={activeEmployees.length}
-          sub={`${formatCR(activeEmployees.reduce((s, e) => s + e.salary, 0))}/yr total comp`}
+          sub={`${fmt(activeEmployees.reduce((s, e) => s + e.salary, 0))}/yr total comp`}
         />
         <MetricCard
           label="MRR"
-          value={formatCR(mrr)}
-          sub={mrr > 0 ? `${formatCR(mrr / 4)}/wk` : null}
+          value={fmt(mrr)}
+          sub={mrr > 0 ? `${fmt(mrr / 4)}/wk` : null}
           color={mrr > 0 ? green : 'var(--txt-muted)'}
         />
         <MetricCard
@@ -125,8 +126,8 @@ export default function Dashboard({ state }) {
         />
         <MetricCard
           label="Weekly Revenue"
-          value={formatCR(weeklyRevenue)}
-          sub={weeklyRevenue > 0 ? `Net: ${formatCR(netWeekly)}/wk` : null}
+          value={fmt(weeklyRevenue)}
+          sub={weeklyRevenue > 0 ? `Net: ${fmt(netWeekly)}/wk` : null}
           color={weeklyRevenue > 0 ? green : 'var(--txt-muted)'}
         />
       </div>

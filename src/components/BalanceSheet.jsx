@@ -1,25 +1,29 @@
 import { formatCR } from '../helpers';
 
-function Row({ label, years, yearlyData, weekData, indent, bold, color }) {
+function Row({ label, years, yearlyData, weekData, indent, bold, color, sym }) {
   const txtCls = bold ? 't-text font-semibold' : 't-text-secondary';
   const valColor = color || '';
+  const fmt = (v) => formatCR(v, sym);
 
   return (
     <tr>
       <td className={`${txtCls} ${indent ? 'pl-6' : ''}`}>{label}</td>
       {years.map((y) => (
         <td key={y} className={`text-right font-mono ${valColor}`}>
-          {formatCR(yearlyData(y))}
+          {fmt(yearlyData(y))}
         </td>
       ))}
       <td className={`text-right font-mono t-border border-l ${valColor}`}>
-        {formatCR(weekData)}
+        {fmt(weekData)}
       </td>
     </tr>
   );
 }
 
 export default function BalanceSheet({ state }) {
+  const sym = state.currency.symbol;
+  const fmt = (v) => formatCR(v, sym);
+
   const years = [...new Set([
     ...Object.keys(state.yearlyExpenses).map(Number),
     ...Object.keys(state.yearlyRevenue).map(Number),
@@ -72,6 +76,9 @@ export default function BalanceSheet({ state }) {
   return (
     <div className="p-3 overflow-hidden">
       <div className="t-bg-card t-border border overflow-x-auto">
+        <div className="px-3 py-1.5 t-border border-b">
+          <span className="text-xs t-text-secondary font-semibold">Balance Sheet</span>
+        </div>
         <table className="sheet text-sm w-max sm:w-full" style={{ minWidth: '480px' }}>
           <thead>
             <tr>
@@ -100,6 +107,7 @@ export default function BalanceSheet({ state }) {
                 weekData={(wkRev.products || {})[id] || 0}
                 indent
                 color="text-accent-green"
+                sym={sym}
               />
             ))}
             <Row
@@ -109,6 +117,7 @@ export default function BalanceSheet({ state }) {
               weekData={wkTotalRev}
               bold
               color="text-accent-green"
+              sym={sym}
             />
 
             {/* Expenses */}
@@ -124,6 +133,7 @@ export default function BalanceSheet({ state }) {
               weekData={wkExp.salaries || 0}
               indent
               color="text-accent-red"
+              sym={sym}
             />
             {[...devProjectIds].map((id) => (
               <Row
@@ -134,6 +144,7 @@ export default function BalanceSheet({ state }) {
                 weekData={(wkExp.devProjects || {})[id] || 0}
                 indent
                 color="text-accent-red"
+                sym={sym}
               />
             ))}
             {[...productIds].map((id) => (
@@ -145,6 +156,7 @@ export default function BalanceSheet({ state }) {
                 weekData={(wkExp.productInfra || {})[id] || 0}
                 indent
                 color="text-accent-red"
+                sym={sym}
               />
             ))}
             <Row
@@ -154,6 +166,7 @@ export default function BalanceSheet({ state }) {
               weekData={wkTotalExp}
               bold
               color="text-accent-red"
+              sym={sym}
             />
 
             <tr className="h-1"><td colSpan={years.length + 2}></td></tr>
@@ -165,12 +178,12 @@ export default function BalanceSheet({ state }) {
                 const net = totalRevForYear(y) - totalExpForYear(y);
                 return (
                   <td key={y} className={`text-right font-bold font-mono ${net < 0 ? 'text-accent-red' : 'text-accent-green'}`}>
-                    {formatCR(net)}
+                    {fmt(net)}
                   </td>
                 );
               })}
               <td className={`text-right font-bold font-mono t-border border-l ${(wkTotalRev - wkTotalExp) < 0 ? 'text-accent-red' : 'text-accent-green'}`}>
-                {formatCR(wkTotalRev - wkTotalExp)}
+                {fmt(wkTotalRev - wkTotalExp)}
               </td>
             </tr>
 
@@ -180,7 +193,7 @@ export default function BalanceSheet({ state }) {
             <tr className="t-bg-cell">
               <td className="font-bold text-accent-cyan">Bank Balance</td>
               <td colSpan={years.length} className={`text-right font-bold font-mono ${state.bank < 0 ? 'text-accent-red' : 'text-accent-green'}`}>
-                {formatCR(state.bank)}
+                {fmt(state.bank)}
               </td>
               <td className="t-border border-l"></td>
             </tr>

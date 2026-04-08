@@ -16,6 +16,7 @@ const HEADERS = [
 ];
 
 export default function HRMS({ state }) {
+  const fmt = (v) => formatCR(v, state.currency.symbol);
   const [sortKey, setSortKey] = useState('id');
   const [sortAsc, setSortAsc] = useState(true);
 
@@ -97,8 +98,8 @@ export default function HRMS({ state }) {
                     {getAssignmentLabel(emp)}
                   </span>
                 </td>
-                <td className="text-right font-mono">{formatCR(emp.salary)}</td>
-                <td className="text-right font-mono">{formatCR(emp.salary / 52)}</td>
+                <td className="text-right font-mono">{fmt(emp.salary)}</td>
+                <td className="text-right font-mono">{fmt(emp.salary / 52)}</td>
                 <td className={`text-right font-mono ${happinessColor(emp.happiness)}`}>
                   {emp.happiness.toFixed(0)}
                 </td>
@@ -120,8 +121,8 @@ export default function HRMS({ state }) {
               <td></td>
               <td className="t-text">Total ({activeCount} active)</td>
               <td></td>
-              <td className="text-right text-accent-cyan font-mono">{formatCR(totalAnnual)}</td>
-              <td className="text-right text-accent-cyan font-mono">{formatCR(totalWeekly)}</td>
+              <td className="text-right text-accent-cyan font-mono">{fmt(totalAnnual)}</td>
+              <td className="text-right text-accent-cyan font-mono">{fmt(totalWeekly)}</td>
               <td colSpan={5}></td>
             </tr>
           </tfoot>

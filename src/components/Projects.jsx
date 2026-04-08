@@ -91,6 +91,7 @@ function AssignmentPanel({ title, assignedEmployees, unassigned, onAssign, onUna
 }
 
 function ProjectCard({ project, state, dispatch, unassigned }) {
+  const fmt = (v) => formatCR(v, state.currency.symbol);
   const isComplete = project.status === 'Complete';
 
   return (
@@ -108,10 +109,10 @@ function ProjectCard({ project, state, dispatch, unassigned }) {
           {!isComplete && (
             <>
               <span className="t-text-secondary">
-                Dev Cost: <span className="text-accent-red font-mono">{formatCR(project.devCostPerWeek)}/wk</span>
+                Dev Cost: <span className="text-accent-red font-mono">{fmt(project.devCostPerWeek)}/wk</span>
               </span>
               <span className="t-text-secondary">
-                Spent: <span className="text-accent-red font-mono">{formatCR(project.totalDevSpend)}</span>
+                Spent: <span className="text-accent-red font-mono">{fmt(project.totalDevSpend)}</span>
               </span>
             </>
           )}
@@ -123,7 +124,7 @@ function ProjectCard({ project, state, dispatch, unassigned }) {
 
       {isComplete ? (
         <div className="t-bg-card t-border border px-3 py-2 text-sm t-text-muted">
-          All epics completed. Total dev spend: <span className="font-mono">{formatCR(project.totalDevSpend)}</span>
+          All epics completed. Total dev spend: <span className="font-mono">{fmt(project.totalDevSpend)}</span>
         </div>
       ) : (
         <>
