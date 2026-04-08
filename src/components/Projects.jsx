@@ -40,7 +40,7 @@ function EpicRow({ epic }) {
   );
 }
 
-function AssignmentPanel({ title, assignedEmployees, unassigned, onAssign, onUnassign, complete }) {
+function AssignmentPanel({ title, assignedEmployees, unassigned, onAssign, onUnassign, complete, baseHeadcount }) {
   const [showDropdown, setShowDropdown] = useState(false);
 
   if (complete) {
@@ -54,7 +54,10 @@ function AssignmentPanel({ title, assignedEmployees, unassigned, onAssign, onUna
 
   return (
     <div className="t-bg-card t-border border p-3">
-      <div className="text-xs t-text-secondary mb-2">{title}</div>
+      <div className="text-xs t-text-secondary mb-2">
+        {title}
+        <span className="t-text-muted ml-1">({assignedEmployees.length}/{baseHeadcount} needed)</span>
+      </div>
       <div className="flex flex-wrap gap-1.5 mb-2 min-h-[24px]">
         {assignedEmployees.length === 0 && (
           <span className="text-xs t-text-muted">No one assigned</span>
@@ -158,6 +161,7 @@ function ProjectCard({ project, state, dispatch, unassigned }) {
                 onAssign={(id) => dispatch({ type: 'ASSIGN_EMPLOYEE', employeeId: id, epicId: epic.id })}
                 onUnassign={(id) => dispatch({ type: 'UNASSIGN_EMPLOYEE', employeeId: id })}
                 complete={epic.status === 'Complete'}
+                baseHeadcount={epic.baseHeadcount}
               />
             ))}
           </div>

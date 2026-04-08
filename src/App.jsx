@@ -10,9 +10,9 @@ import Admin from './components/Admin';
 
 const TABS = [
   { key: 'dashboard', label: 'Dashboard' },
-  { key: 'growth', label: 'Growth' },
   { key: 'projects', label: 'Projects' },
   { key: 'hrms', label: 'HRMS' },
+  { key: 'growth', label: 'Growth' },
   { key: 'balance', label: 'Finances' },
   { key: 'admin', label: 'Admin' },
 ];
