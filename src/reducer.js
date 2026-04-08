@@ -22,7 +22,7 @@ function makeAppifyMVP() {
         totalWork: 36,
         workCompleted: 0,
         status: 'Not Started',
-        baseHeadcount: 3,
+        baseHeadcount: 1,
       },
       {
         id: 'appify-mvp-infra',
@@ -32,7 +32,7 @@ function makeAppifyMVP() {
         totalWork: 36,
         workCompleted: 0,
         status: 'Not Started',
-        baseHeadcount: 3,
+        baseHeadcount: 1,
       },
     ],
   };
@@ -91,7 +91,7 @@ function createInfraProject(productId, productName, yearNum, createdWeek) {
         totalWork: 104,
         workCompleted: 0,
         status: 'Not Started',
-        baseHeadcount: 2,
+        baseHeadcount: 1,
       },
     ],
   };
@@ -154,7 +154,7 @@ export function findEpicInProjects(epicId, devProjects) {
 
 // === State initialization ===
 
-const initialEmployees = generateInitialEmployees(10);
+const initialEmployees = generateInitialEmployees(2);
 const companyName = generateCompanyName();
 
 function makeInitialYearExpenses() {
@@ -177,7 +177,7 @@ export const initialState = {
   employees: initialEmployees,
   devProjects: [makeAppifyMVP()],
   products: [],
-  log: [{ week: 1, year: 1, message: 'Game started with 10 employees' }],
+  log: [{ week: 1, year: 1, message: 'Game started with 2 employees' }],
   yearlyExpenses: { 1: makeInitialYearExpenses() },
   yearlyRevenue: { 1: makeInitialYearRevenue() },
   currentWeekExpenses: { salaries: 0, devProjects: {}, productInfra: {} },
@@ -712,7 +712,7 @@ export function gameReducer(state, action) {
     }
 
     case 'RESTART': {
-      const newEmps = generateInitialEmployees(10);
+      const newEmps = generateInitialEmployees(2);
       const newName = generateCompanyName();
       return {
         ...initialState,
@@ -722,7 +722,7 @@ export function gameReducer(state, action) {
         products: [],
         theme: state.theme,
         currency: state.currency,
-        log: [{ week: 1, year: 1, message: 'Game started with 10 employees' }],
+        log: [{ week: 1, year: 1, message: 'Game started with 2 employees' }],
         yearlyExpenses: { 1: makeInitialYearExpenses() },
         yearlyRevenue: { 1: makeInitialYearRevenue() },
       };
