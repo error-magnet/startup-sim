@@ -23,7 +23,26 @@ function PriceInput({ value, onChange }) {
   );
 }
 
-function ProductPanel({ product, dispatch, sym }) {
+function InfoTooltip({ children }) {
+  const [show, setShow] = useState(false);
+
+  return (
+    <span className="relative inline-block">
+      <button
+        onClick={() => setShow(!show)}
+        onBlur={() => setShow(false)}
+        className="w-4 h-4 inline-flex items-center justify-center text-xs t-text-muted t-border border rounded-full hover:t-text transition-colors cursor-help"
+      >?</button>
+      {show && (
+        <div className="absolute left-6 top-0 z-20 t-bg-card t-border border shadow-lg p-3 min-w-[220px] text-sm">
+          {children}
+        </div>
+      )}
+    </span>
+  );
+}
+
+function ProductPanel({ product, dispatch, sym, devProjects }) {
   const fmt = (v) => formatCR(v, sym);
   const cfg = product.config;
   const stats = getProductUserStats(product);
@@ -36,6 +55,10 @@ function ProductPanel({ product, dispatch, sym }) {
   const lm = product.lastMonthStats;
   const netChange = lm.converted - lm.churned;
 
+  // Find source MVP project name
+  const mvpProject = devProjects.find((p) => p.productId === product.id && p.type === 'mvp');
+  const versionName = mvpProject ? mvpProject.name : null;
+
   return (
     <div className="flex flex-col gap-3">
       {/* Product header */}
@@ -43,6 +66,9 @@ function ProductPanel({ product, dispatch, sym }) {
         <div className="flex items-center gap-2">
           <span className="font-semibold t-text">{product.name}</span>
           <span className="text-xs t-text-muted">({product.type})</span>
+          {versionName && (
+            <span className="text-xs t-text-muted">Version: {versionName}</span>
+          )}
         </div>
         <div className="flex items-center gap-4 text-sm">
           {product.launchedWeek && (
@@ -58,7 +84,27 @@ function ProductPanel({ product, dispatch, sym }) {
         {/* Pricing */}
         <div className="t-bg-card t-border border overflow-hidden">
           <table className="sheet w-full text-sm">
-            <thead><tr><th colSpan={2}>Pricing</th></tr></thead>
+            <thead>
+              <tr>
+                <th colSpan={2}>
+                  <span className="mr-1">Pricing</span>
+                  <InfoTooltip>
+                    <table className="w-full text-xs">
+                      <tbody>
+                        <tr><td className="t-text-secondary pr-2 py-0.5">Signups/mo</td><td className="text-right font-mono">{cfg.signupsPerMonth}</td></tr>
+                        <tr><td className="t-text-secondary pr-2 py-0.5">Retention Rate</td><td className="text-right font-mono">{(retentionRate * 100).toFixed(0)}%</td></tr>
+                        <tr><td className="t-text-secondary pr-2 py-0.5">Churn Rate</td><td className="text-right font-mono">{(churnRate * 100).toFixed(0)}%</td></tr>
+                        <tr><td className="t-text-secondary pr-2 py-0.5">Base Retention</td><td className="text-right font-mono">{(cfg.baseRetentionRate * 100).toFixed(0)}%</td></tr>
+                        <tr><td className="t-text-secondary pr-2 py-0.5">Base Churn</td><td className="text-right font-mono">{(cfg.baseChurnRate * 100).toFixed(0)}%</td></tr>
+                        <tr><td className="t-text-secondary pr-2 py-0.5">Free Trial</td><td className="text-right font-mono">{cfg.freeTrialWeeks} wks</td></tr>
+                        <tr><td className="t-text-secondary pr-2 py-0.5">Infra/user</td><td className="text-right font-mono">{sym}{cfg.infraCostPerUser}</td></tr>
+                        <tr><td className="t-text-secondary pr-2 py-0.5">Infra base</td><td className="text-right font-mono">{fmt(cfg.infraBaseCost)}</td></tr>
+                      </tbody>
+                    </table>
+                  </InfoTooltip>
+                </th>
+              </tr>
+            </thead>
             <tbody>
               <tr>
                 <td className="t-text-secondary">Monthly Price</td>
@@ -69,14 +115,6 @@ function ProductPanel({ product, dispatch, sym }) {
                     onChange={(p) => dispatch({ type: 'SET_PRICE', productId: product.id, price: p })}
                   />
                 </td>
-              </tr>
-              <tr>
-                <td className="t-text-secondary">Retention Rate</td>
-                <td className="text-right font-mono">{(retentionRate * 100).toFixed(0)}%</td>
-              </tr>
-              <tr>
-                <td className="t-text-secondary">Churn Rate</td>
-                <td className="text-right font-mono">{(churnRate * 100).toFixed(0)}%</td>
               </tr>
             </tbody>
           </table>
@@ -196,7 +234,13 @@ export default function Growth({ state, dispatch }) {
   return (
     <div className="p-3 flex flex-col gap-4">
       {state.products.map((product) => (
-        <ProductPanel key={product.id} product={product} dispatch={dispatch} sym={state.currency.symbol} />
+        <ProductPanel
+          key={product.id}
+          product={product}
+          dispatch={dispatch}
+          sym={state.currency.symbol}
+          devProjects={state.devProjects}
+        />
       ))}
     </div>
   );
