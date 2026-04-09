@@ -274,6 +274,33 @@ export default function App() {
         </div>
       </div>
 
+      {/* Notifications */}
+      {state.notifications.length > 0 && (
+        <div className="fixed top-12 right-3 z-40 flex flex-col gap-1.5 max-w-xs">
+          {state.notifications.map((notif) => (
+            <div
+              key={notif.id}
+              className="t-bg-card t-border border shadow-lg px-3 py-2 flex items-center gap-2 text-sm animate-in"
+            >
+              <span className="t-text flex-1">{notif.message}</span>
+              {notif.tab && (
+                <button
+                  onClick={() => {
+                    dispatch({ type: 'SET_TAB', tab: notif.tab });
+                    dispatch({ type: 'DISMISS_NOTIFICATION', id: notif.id });
+                  }}
+                  className="text-xs px-2 py-0.5 bg-accent-blue text-white shrink-0 transition-colors hover:opacity-80"
+                >View</button>
+              )}
+              <button
+                onClick={() => dispatch({ type: 'DISMISS_NOTIFICATION', id: notif.id })}
+                className="t-text-muted hover:t-text transition-colors text-xs shrink-0"
+              >×</button>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Content */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         {state.activeTab === 'dashboard' && <Dashboard state={state} />}

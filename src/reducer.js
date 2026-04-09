@@ -42,15 +42,15 @@ function makeDefaultProductConfig() {
   return {
     signupsPerMonth: 100,
     baseRetentionRate: 0.20,
-    basePrice: 5,
-    retentionDropPerCR: 0.04,
-    retentionGainPerCR: 0.02,
+    basePrice: 500,
+    retentionDropPerCR: 0.0004,
+    retentionGainPerCR: 0.0002,
     baseChurnRate: 0.20,
-    churnIncreasePerCR: 0.04,
-    churnDecreasePerCR: 0.02,
+    churnIncreasePerCR: 0.0004,
+    churnDecreasePerCR: 0.0002,
     freeTrialWeeks: 4,
     weeklyVariance: 0.03,
-    infraCostPerUser: 0.5,
+    infraCostPerUser: 50,
     infraBaseCost: 0,
   };
 }
@@ -62,7 +62,7 @@ function createLiveProduct(productId, name, type, launchedWeek) {
     type,
     status: 'Live',
     launchedWeek,
-    monthlyPrice: 5,
+    monthlyPrice: 500,
     config: makeDefaultProductConfig(),
     cohorts: [],
     financials: { totalRevenue: 0, totalInfraCost: 0 },
@@ -228,6 +228,8 @@ export const initialState = {
   currency: { symbol: '₹', name: 'Rupee' },
   capitalOpportunities: [],
   activeLoans: [],
+  notifications: [],
+  nextNotificationId: 1,
 };
 
 // === Helpers ===
@@ -300,6 +302,9 @@ export function gameReducer(state, action) {
           message: `Payroll processed — ${state.currency.symbol}${Math.round(monthlyPayroll).toLocaleString('en-US')} debited`,
         });
       }
+
+      const newNotifications = [];
+      let notifId = state.nextNotificationId;
 
       // 2b. Process active loan repayments (monthly)
       const activeLoans = state.activeLoans.map((l) => ({ ...l }));
@@ -378,6 +383,7 @@ export function gameReducer(state, action) {
             // Trigger capital opportunities
             newCapitalOpportunities.push(...createMVPCapitalOpportunities(newTotalWeeks));
             log.unshift({ week: newWeek, year: newYear, message: 'New capital opportunities available! Check the Finances tab.' });
+            newNotifications.push({ id: notifId++, message: 'Capital opportunities available!', tab: 'balance' });
           } else if (proj.type === 'infra') {
             log.unshift({ week: newWeek, year: newYear, message: `${proj.name} completed.` });
           }
@@ -548,6 +554,8 @@ export function gameReducer(state, action) {
         pendingNegotiations,
         capitalOpportunities: [...capitalOpportunities, ...newCapitalOpportunities],
         activeLoans: activeLoans.filter((l) => l.remainingPayments > 0),
+        notifications: [...state.notifications, ...newNotifications],
+        nextNotificationId: notifId,
       };
     }
 
@@ -788,6 +796,13 @@ export function gameReducer(state, action) {
       }
 
       return state;
+    }
+
+    case 'DISMISS_NOTIFICATION': {
+      return {
+        ...state,
+        notifications: state.notifications.filter((n) => n.id !== action.id),
+      };
     }
 
     case 'ACCEPT_CAPITAL': {
