@@ -276,26 +276,29 @@ export default function App() {
 
       {/* Notifications */}
       {state.notifications.length > 0 && (
-        <div className="fixed top-12 right-3 z-40 flex flex-col gap-1.5 max-w-xs">
+        <div className="fixed bottom-4 right-4 z-40 flex flex-col gap-2 max-w-sm w-full sm:w-auto">
           {state.notifications.map((notif) => (
             <div
               key={notif.id}
-              className="t-bg-card t-border border shadow-lg px-3 py-2 flex items-center gap-2 text-sm animate-in"
+              className="t-bg-card t-border border-2 shadow-xl px-4 py-3 flex flex-col gap-2"
+              style={{ borderColor: 'rgba(59,130,246,0.5)' }}
             >
-              <span className="t-text flex-1">{notif.message}</span>
+              <div className="flex items-start gap-2">
+                <span className="t-text text-sm flex-1 leading-snug">{notif.message}</span>
+                <button
+                  onClick={() => dispatch({ type: 'DISMISS_NOTIFICATION', id: notif.id })}
+                  className="t-text-muted hover:t-text transition-colors text-base leading-none shrink-0 mt-0.5"
+                >×</button>
+              </div>
               {notif.tab && (
                 <button
                   onClick={() => {
                     dispatch({ type: 'SET_TAB', tab: notif.tab });
                     dispatch({ type: 'DISMISS_NOTIFICATION', id: notif.id });
                   }}
-                  className="text-xs px-2 py-0.5 bg-accent-blue text-white shrink-0 transition-colors hover:opacity-80"
+                  className="text-xs px-3 py-1 bg-accent-blue text-white self-start transition-colors hover:opacity-80"
                 >View</button>
               )}
-              <button
-                onClick={() => dispatch({ type: 'DISMISS_NOTIFICATION', id: notif.id })}
-                className="t-text-muted hover:t-text transition-colors text-xs shrink-0"
-              >×</button>
             </div>
           ))}
         </div>

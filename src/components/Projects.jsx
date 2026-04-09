@@ -14,27 +14,31 @@ function EpicRow({ epic }) {
       <td className="text-center font-mono">{assigned}</td>
       <td className="text-center font-mono">{eff.toFixed(1)}/wk</td>
       <td>
-        <div className="flex items-center gap-2">
-          <div className="flex-1 h-1 t-bg-hover overflow-hidden">
-            <div
-              className="h-full transition-all"
-              style={{ width: `${pct}%`, background: epic.status === 'Complete' ? '#00d26a' : '#3b82f6' }}
-            />
+        {epic.perpetual ? (
+          <span className="text-xs t-text-muted">Ongoing</span>
+        ) : (
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-1 t-bg-hover overflow-hidden">
+              <div
+                className="h-full transition-all"
+                style={{ width: `${pct}%`, background: epic.status === 'Complete' ? '#00d26a' : '#3b82f6' }}
+              />
+            </div>
+            <span className="text-xs t-text-muted font-mono w-16 text-right">
+              {epic.workCompleted.toFixed(1)}/{epic.totalWork}
+            </span>
           </div>
-          <span className="text-xs t-text-muted font-mono w-16 text-right">
-            {epic.workCompleted.toFixed(1)}/{epic.totalWork}
-          </span>
-        </div>
+        )}
       </td>
       <td className="text-center font-mono t-text-secondary">
-        {epic.status === 'Complete' ? '--' : wksLeft === Infinity ? '--' : `${wksLeft} wks`}
+        {epic.perpetual ? '--' : epic.status === 'Complete' ? '--' : wksLeft === Infinity ? '--' : `${wksLeft} wks`}
       </td>
       <td className="text-center">
         <span className={
           epic.status === 'Complete' ? 'text-accent-green'
             : epic.status === 'In Progress' ? 'text-accent-blue'
               : 'text-accent-yellow'
-        }>{epic.status}</span>
+        }>{epic.perpetual && epic.status === 'In Progress' ? 'Ongoing' : epic.status}</span>
       </td>
     </tr>
   );

@@ -133,10 +133,10 @@ function createUpgradeProject(productId, productName, args, createdWeek) {
 }
 
 function createInfraProject(productId, productName, yearNum, createdWeek) {
-  const projId = `${productId}-infra-y${yearNum}`;
+  const projId = `${productId}-infra`;
   return {
     id: projId,
-    name: `${productName} Infra Y${yearNum}`,
+    name: `${productName} Infra`,
     productId,
     type: 'infra',
     status: 'Active',
@@ -150,7 +150,8 @@ function createInfraProject(productId, productName, yearNum, createdWeek) {
         name: 'Production Infrastructure & Maintenance',
         projectId: projId,
         assignedEmployeeIds: [],
-        totalWork: 104,
+        perpetual: true,
+        totalWork: 0,
         workCompleted: 0,
         status: 'Not Started',
         baseHeadcount: 1,
@@ -206,6 +207,7 @@ export function effectiveWork(headcount, baseHeadcount = 3) {
 }
 
 export function weeksRemaining(epic) {
+  if (epic.perpetual) return Infinity;
   const remaining = epic.totalWork - epic.workCompleted;
   if (remaining <= 0) return 0;
   const eff = effectiveWork(epic.assignedEmployeeIds.length, epic.baseHeadcount);
@@ -410,15 +412,20 @@ export function gameReducer(state, action) {
           if (epic.assignedEmployeeIds.length === 0) continue;
 
           const eff = effectiveWork(epic.assignedEmployeeIds.length, epic.baseHeadcount);
-          epic.workCompleted = Math.min(epic.workCompleted + eff, epic.totalWork);
 
-          if (epic.workCompleted >= epic.totalWork) {
-            epic.status = 'Complete';
-            epic.assignedEmployeeIds.forEach((id) => freedEmployeeIds.add(id));
-            epic.assignedEmployeeIds = [];
-            log.unshift({ week: newWeek, year: newYear, message: `${epic.name} completed!` });
-          } else {
+          if (epic.perpetual) {
             epic.status = 'In Progress';
+          } else {
+            epic.workCompleted = Math.min(epic.workCompleted + eff, epic.totalWork);
+
+            if (epic.workCompleted >= epic.totalWork) {
+              epic.status = 'Complete';
+              epic.assignedEmployeeIds.forEach((id) => freedEmployeeIds.add(id));
+              epic.assignedEmployeeIds = [];
+              log.unshift({ week: newWeek, year: newYear, message: `${epic.name} completed!` });
+            } else {
+              epic.status = 'In Progress';
+            }
           }
         }
 
@@ -516,18 +523,9 @@ export function gameReducer(state, action) {
           (p) => p.productId === product.id && p.type === 'infra' && p.status === 'Active'
         );
         const infraStaffed = activeInfra && activeInfra.epics.some(
-          (e) => e.status !== 'Complete' && e.assignedEmployeeIds.length > 0
+          (e) => e.assignedEmployeeIds.length > 0
         );
         product.infraStaffed = infraStaffed;
-
-        // Check if new annual infra project needed
-        if (weeksSinceLaunch > 0 && weeksSinceLaunch % 52 === 0) {
-          const existingInfra = devProjects.filter((p) => p.productId === product.id && p.type === 'infra');
-          const yearNum = existingInfra.length + 1;
-          const newInfra = createInfraProject(product.id, product.name, yearNum, newTotalWeeks);
-          devProjects.push(newInfra);
-          log.unshift({ week: newWeek, year: newYear, message: `${product.name} Infra Y${yearNum} project created. Assign engineers.` });
-        }
 
         if (!infraStaffed) continue;
 
@@ -607,6 +605,22 @@ export function gameReducer(state, action) {
           product.financials.totalInfraCost += infraCost;
           weekExpProductInfra[product.id] = (weekExpProductInfra[product.id] || 0) + infraCost;
           yearExp.productInfra[product.id] = (yearExp.productInfra[product.id] || 0) + infraCost;
+        }
+      }
+
+      // 4b. Check if projects are unstaffed for too long
+      if (newTotalWeeks === 10) {
+        const hasUnstaffedProjects = devProjects.some(
+          (p) => p.status === 'Active' && p.epics.some(
+            (e) => e.status !== 'Complete' && e.assignedEmployeeIds.length === 0
+          )
+        );
+        if (hasUnstaffedProjects) {
+          newNotifications.push({
+            id: notifId++,
+            message: 'Your projects need people assigned, otherwise they will not progress!',
+            tab: 'projects',
+          });
         }
       }
 
