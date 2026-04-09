@@ -309,7 +309,7 @@ export default function App() {
         {state.activeTab === 'dashboard' && <Dashboard state={state} />}
         {state.activeTab === 'growth' && <Growth state={state} dispatch={dispatch} />}
         {state.activeTab === 'projects' && <Projects state={state} dispatch={dispatch} />}
-        {state.activeTab === 'hrms' && <HRMS state={state} />}
+        {state.activeTab === 'hrms' && <HRMS state={state} dispatch={dispatch} />}
         {state.activeTab === 'balance' && <BalanceSheet state={state} dispatch={dispatch} />}
         {state.activeTab === 'admin' && <Admin state={state} dispatch={dispatch} />}
       </div>

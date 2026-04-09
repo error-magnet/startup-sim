@@ -1,4 +1,4 @@
-import { generateInitialEmployees, generateCompanyName } from './helpers';
+import { generateInitialEmployees, generateCompanyName, generateName } from './helpers';
 
 // === Factory functions ===
 
@@ -47,10 +47,10 @@ function makeAppifyMVP() {
           version: 'v1',
           devCostPerMonth: 50000,
           totalWork: 48,
-          baseHeadcount: 1,
+          baseHeadcount: 2,
           upgradeProduct: {
             setVersion: 'v1',
-            configOverrides: { infraBaseCost: 75000 },
+            configOverrides: { infraBaseCost: 75000, basePrice: 1000 },
             configDeltas: { baseRetentionRate: 0.10 },
           },
         }},
@@ -294,6 +294,7 @@ export const initialState = {
   activeLoans: [],
   notifications: [],
   nextNotificationId: 1,
+  hiringCandidates: [],
 };
 
 // === Helpers ===
@@ -339,6 +340,7 @@ export function gameReducer(state, action) {
         cohorts: p.cohorts.map((c) => ({ ...c })),
       }));
 
+      const hiringCandidates = [...state.hiringCandidates];
       const log = [...state.log];
       let bankDelta = 0;
 
@@ -460,6 +462,7 @@ export function gameReducer(state, action) {
               const product = products.find((p) => p.id === proj.productId);
               if (product) {
                 if (up.setVersion) product.currentVersion = up.setVersion;
+                if (up.setPrice) product.monthlyPrice = up.setPrice;
                 if (up.configOverrides) {
                   for (const [k, v] of Object.entries(up.configOverrides)) product.config[k] = v;
                 }
@@ -609,7 +612,7 @@ export function gameReducer(state, action) {
       }
 
       // 4b. Check if projects are unstaffed for too long
-      if (newTotalWeeks === 10) {
+      if (newTotalWeeks === 5) {
         const hasUnstaffedProjects = devProjects.some(
           (p) => p.status === 'Active' && p.epics.some(
             (e) => e.status !== 'Complete' && e.assignedEmployeeIds.length === 0
@@ -621,6 +624,26 @@ export function gameReducer(state, action) {
             message: 'Your projects need people assigned, otherwise they will not progress!',
             tab: 'projects',
           });
+        }
+      }
+
+      // 4c. Check if intern hiring candidate should appear (V1 at 30 weeks)
+      const v1Project = devProjects.find((p) => p.id === 'appify-v1' && p.status === 'Active');
+      if (v1Project && v1Project.createdWeek && (newTotalWeeks - v1Project.createdWeek) === 30) {
+        if (!hiringCandidates.some((c) => c.id === 'intern-1')) {
+          hiringCandidates.push({
+            id: 'intern-1',
+            name: generateName(new Set(employees.map((e) => e.name))),
+            salary: 25000,
+            role: 'Intern',
+            termWeeks: 24,
+          });
+          newNotifications.push({
+            id: notifId++,
+            message: 'A new intern is available to hire! Check HRMS.',
+            tab: 'hrms',
+          });
+          log.unshift({ week: newWeek, year: newYear, message: 'New hiring candidate available: Intern' });
         }
       }
 
@@ -661,6 +684,21 @@ export function gameReducer(state, action) {
 
       // 7. Bank and game over
       const newBank = state.bank + bankDelta;
+      // 6b. Check intern term expiry
+      for (const emp of employees) {
+        if (emp.termEndsAt && newTotalWeeks >= emp.termEndsAt && emp.status === 'Active') {
+          emp.status = 'Left';
+          emp.assignment = null;
+          // Remove from all projects
+          for (const proj of devProjects) {
+            for (const epic of proj.epics) {
+              epic.assignedEmployeeIds = epic.assignedEmployeeIds.filter((id) => id !== emp.id);
+            }
+          }
+          log.unshift({ week: newWeek, year: newYear, message: `${emp.name}'s internship ended — they have left the company.` });
+        }
+      }
+
       const gameOver = newBank <= 0;
       if (gameOver) {
         log.unshift({ week: newWeek, year: newYear, message: 'GAME OVER — Startup ran out of money!' });
@@ -690,6 +728,7 @@ export function gameReducer(state, action) {
         activeLoans: activeLoans.filter((l) => l.remainingPayments > 0),
         notifications: [...state.notifications, ...newNotifications],
         nextNotificationId: notifId,
+        hiringCandidates,
       };
     }
 
@@ -979,6 +1018,36 @@ export function gameReducer(state, action) {
         capitalOpportunities: newCapitalOpportunities,
         activeLoans: newActiveLoans,
         log: newLog,
+      };
+    }
+
+    case 'HIRE_CANDIDATE': {
+      const { candidateId } = action;
+      const candidate = state.hiringCandidates.find((c) => c.id === candidateId);
+      if (!candidate) return state;
+
+      const maxId = state.employees.reduce((m, e) => Math.max(m, e.id), 0);
+      const newEmployee = {
+        id: maxId + 1,
+        name: candidate.name,
+        salary: candidate.salary,
+        previousSalary: candidate.salary,
+        status: 'Active',
+        joinedWeek: state.totalWeeks,
+        assignment: null,
+        personality: { salaryPriority: 3, restlessness: 2 },
+        happiness: 100,
+        ...(candidate.termWeeks ? { termWeeks: candidate.termWeeks, termEndsAt: state.totalWeeks + candidate.termWeeks } : {}),
+      };
+
+      return {
+        ...state,
+        employees: [...state.employees, newEmployee],
+        hiringCandidates: state.hiringCandidates.filter((c) => c.id !== candidateId),
+        log: [
+          { week: state.week, year: state.year, message: `Hired ${candidate.name} (${candidate.role}) at ₹${candidate.salary.toLocaleString('en-US')}/mo` },
+          ...state.log,
+        ].slice(0, 200),
       };
     }
 

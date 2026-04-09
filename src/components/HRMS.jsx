@@ -14,7 +14,7 @@ const HEADERS = [
   { key: 'joinedWeek', label: 'Joined', align: 'text-left' },
 ];
 
-export default function HRMS({ state }) {
+export default function HRMS({ state, dispatch }) {
   const fmt = (v) => formatCR(v, state.currency.symbol);
   const [sortKey, setSortKey] = useState('id');
   const [sortAsc, setSortAsc] = useState(true);
@@ -125,6 +125,36 @@ export default function HRMS({ state }) {
           </tfoot>
         </table>
       </div>
+
+      {/* Hiring Section */}
+      {state.hiringCandidates.length > 0 && (
+        <div className="t-bg-card t-border border overflow-hidden mt-3">
+          <div className="px-3 py-1.5 t-border border-b">
+            <span className="text-xs t-text-secondary font-semibold">Hiring</span>
+          </div>
+          <div className="flex flex-col gap-2 p-3">
+            {state.hiringCandidates.map((candidate) => (
+              <div key={candidate.id} className="t-border border p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                  <div className="font-semibold t-text text-sm">{candidate.name}</div>
+                  <div className="text-xs t-text-secondary">{candidate.role}</div>
+                  <div className="text-xs t-text-muted mt-1">
+                    Salary: <span className="font-mono text-accent-yellow">{fmt(candidate.salary)}/mo</span>
+                    {candidate.termWeeks && (
+                      <span> — Term: {Math.round(candidate.termWeeks / 4)} months</span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => dispatch({ type: 'HIRE_CANDIDATE', candidateId: candidate.id })}
+                  className="px-3 py-1 text-sm font-semibold shrink-0 transition-colors"
+                  style={{ background: '#00d26a', color: '#000' }}
+                >Hire</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
