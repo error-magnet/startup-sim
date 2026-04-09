@@ -70,6 +70,14 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--bg-border); border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--txt-muted); }
 
+@keyframes fade-out {
+  0%, 70% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.animate-fade-out {
+  animation: fade-out 4s ease-out forwards;
+}
+
 /* Mobile: prevent horizontal overflow */
 @media (max-width: 639px) {
   .sheet td, .sheet th {

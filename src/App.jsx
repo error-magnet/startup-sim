@@ -119,6 +119,7 @@ function NegotiationModal({ employee, dispatch, sym }) {
 export default function App() {
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const [showIntro, setShowIntro] = useState(true);
+  const [showTimeTip, setShowTimeTip] = useState(false);
   const intervalRef = useRef(null);
 
   useEffect(() => {
@@ -154,7 +155,12 @@ export default function App() {
           <CompanyName name={state.companyName} dispatch={dispatch} />
 
           {/* Controls — visible on mobile in top row */}
-          <div className="flex items-center gap-2 sm:hidden">
+          <div className="flex items-center gap-2 sm:hidden relative">
+            {showTimeTip && (
+              <div className="absolute -bottom-9 left-0 right-0 flex justify-center pointer-events-none z-50 animate-fade-out">
+                <span className="text-xs px-2 py-1 bg-accent-blue text-white whitespace-nowrap shadow-lg">You can control time here</span>
+              </div>
+            )}
             <div className="font-mono text-base flex items-center gap-1 t-bg-cell px-2 py-0.5 t-border border">
               <span className="t-text-muted text-xs">Y</span>
               <span className="font-bold t-text">{state.year}</span>
@@ -223,7 +229,12 @@ export default function App() {
         </div>
 
         {/* Controls — desktop only */}
-        <div className="hidden sm:flex items-center gap-2">
+        <div className="hidden sm:flex items-center gap-2 relative">
+          {showTimeTip && (
+            <div className="absolute -bottom-9 left-0 right-0 flex justify-center pointer-events-none z-50 animate-fade-out">
+              <span className="text-xs px-2 py-1 bg-accent-blue text-white whitespace-nowrap shadow-lg">You can control time here</span>
+            </div>
+          )}
           <div className="font-mono text-base flex items-center gap-1 mr-1 t-bg-cell px-2 py-0.5 t-border border">
             <span className="t-text-muted text-xs">Y</span>
             <span className="font-bold t-text">{state.year}</span>
@@ -325,13 +336,18 @@ export default function App() {
           <button
             onClick={() => {
               setShowIntro(false);
+              setShowTimeTip(true);
+              setTimeout(() => setShowTimeTip(false), 4000);
               dispatch({ type: 'TOGGLE_PAUSE' });
             }}
             className="t-bg-card t-border border p-6 max-w-sm w-[calc(100%-2rem)] mx-4 sm:mx-0 text-center flex flex-col gap-3 cursor-pointer hover:border-accent-blue transition-colors"
           >
             <div className="text-accent-cyan font-mono text-lg font-bold">{state.companyName}</div>
-            <div className="t-text-secondary text-sm leading-relaxed">
-              Your startup is live. Assign people to projects to start building, and don't go bankrupt! Pause time whenever you want.
+            <div className="t-text-secondary text-sm leading-relaxed flex flex-col gap-1">
+              <span>Your startup is live.</span>
+              <span>Assign people to projects to start building.</span>
+              <span>Monetize your app.</span>
+              <span>And oh, don't go bankrupt!</span>
             </div>
             <div className="mt-1 text-accent-green font-semibold text-sm">Click to start!</div>
           </button>
