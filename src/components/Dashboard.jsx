@@ -40,7 +40,8 @@ export default function Dashboard({ state }) {
     mrr += stats.payingUsers * p.monthlyPrice;
   }
 
-  const monthlyBurn = monthlyPayroll + monthlyDevCost + monthlyInfra;
+  const monthlyLoanPayments = state.activeLoans.reduce((s, l) => s + l.monthlyPayment, 0);
+  const monthlyBurn = monthlyPayroll + monthlyDevCost + monthlyInfra + monthlyLoanPayments;
   const netMonthly = monthlyRevenue - monthlyBurn;
   const effectiveBurn = Math.max(0, -netMonthly);
 
@@ -93,7 +94,7 @@ export default function Dashboard({ state }) {
         <MetricCard
           label="Monthly Burn"
           value={fmt(monthlyBurn)}
-          sub={`Sal ${fmt(monthlyPayroll)}${monthlyDevCost ? ` + Proj ${fmt(monthlyDevCost)}` : ''}${monthlyInfra ? ` + Infra ${fmt(monthlyInfra)}` : ''}`}
+          sub={`Sal ${fmt(monthlyPayroll)}${monthlyDevCost ? ` + Proj ${fmt(monthlyDevCost)}` : ''}${monthlyInfra ? ` + Infra ${fmt(monthlyInfra)}` : ''}${monthlyLoanPayments ? ` + Loan ${fmt(monthlyLoanPayments)}` : ''}`}
           color={red}
         />
       </div>

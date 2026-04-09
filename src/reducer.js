@@ -97,6 +97,45 @@ function createInfraProject(productId, productName, yearNum, createdWeek) {
   };
 }
 
+// === Capital opportunity factories ===
+
+function calcEMI(principal, annualRate, termMonths) {
+  const r = annualRate / 12;
+  if (r === 0) return principal / termMonths;
+  const factor = Math.pow(1 + r, termMonths);
+  return (principal * r * factor) / (factor - 1);
+}
+
+function createMVPCapitalOpportunities(totalWeeks) {
+  return [
+    {
+      id: `loan-central-bank-${totalWeeks}`,
+      type: 'loan',
+      name: 'Central Bank Loan',
+      description: '₹50L loan at 8% p.a., monthly EMI over 3 years',
+      amount: 5_000_000,
+      interestRate: 0.08,
+      termMonths: 36,
+      monthlyPayment: calcEMI(5_000_000, 0.08, 36),
+      availableFromWeek: totalWeeks,
+      expiresAtWeek: totalWeeks + 24, // 6 months
+      status: 'available',
+      trigger: 'mvp',
+    },
+    {
+      id: `grant-state-govt-${totalWeeks}`,
+      type: 'grant',
+      name: 'State Government Grant',
+      description: '₹10L grant — no repayment required',
+      amount: 1_000_000,
+      availableFromWeek: totalWeeks,
+      expiresAtWeek: totalWeeks + 24,
+      status: 'available',
+      trigger: 'mvp',
+    },
+  ];
+}
+
 // === Game logic helpers ===
 
 export function effectiveWork(headcount, baseHeadcount = 3) {
@@ -158,7 +197,7 @@ const initialEmployees = generateInitialEmployees(2);
 const companyName = generateCompanyName();
 
 function makeInitialYearExpenses() {
-  return { salaries: 0, devProjects: {}, productInfra: {} };
+  return { salaries: 0, devProjects: {}, productInfra: {}, loanRepayments: 0 };
 }
 
 function makeInitialYearRevenue() {
@@ -187,6 +226,8 @@ export const initialState = {
   negotiatingEmployeeId: null,
   pendingNegotiations: [],
   currency: { symbol: '₹', name: 'Rupee' },
+  capitalOpportunities: [],
+  activeLoans: [],
 };
 
 // === Helpers ===
@@ -260,6 +301,33 @@ export function gameReducer(state, action) {
         });
       }
 
+      // 2b. Process active loan repayments (monthly)
+      const activeLoans = state.activeLoans.map((l) => ({ ...l }));
+      if (isMonthEnd) {
+        for (const loan of activeLoans) {
+          if (loan.remainingPayments <= 0) continue;
+          bankDelta -= loan.monthlyPayment;
+          loan.remainingBalance -= (loan.monthlyPayment - loan.remainingBalance * (loan.interestRate / 12));
+          loan.remainingPayments -= 1;
+          loan.totalPaid += loan.monthlyPayment;
+          yearExp.loanRepayments = (yearExp.loanRepayments || 0) + loan.monthlyPayment;
+          if (loan.remainingPayments <= 0) {
+            loan.remainingBalance = 0;
+            log.unshift({ week: newWeek, year: newYear, message: `${loan.name} fully repaid!` });
+          }
+        }
+      }
+
+      // 2c. Expire capital opportunities
+      let capitalOpportunities = state.capitalOpportunities.map((c) => ({ ...c }));
+      const newCapitalOpportunities = [];
+      for (const opp of capitalOpportunities) {
+        if (opp.status === 'available' && newTotalWeeks > opp.expiresAtWeek) {
+          opp.status = 'expired';
+          log.unshift({ week: newWeek, year: newYear, message: `Capital opportunity expired: ${opp.name}` });
+        }
+      }
+
       // 3. Process dev projects
       const freedEmployeeIds = new Set();
       const newDevProjectsToAdd = [];
@@ -307,6 +375,9 @@ export function gameReducer(state, action) {
             newDevProjectsToAdd.push(createInfraProject(proj.productId, productName, 1, newTotalWeeks));
             log.unshift({ week: newWeek, year: newYear, message: `${proj.name} shipped! Product is now live.` });
             log.unshift({ week: newWeek, year: newYear, message: `${productName} Infra Y1 project created. Assign engineers.` });
+            // Trigger capital opportunities
+            newCapitalOpportunities.push(...createMVPCapitalOpportunities(newTotalWeeks));
+            log.unshift({ week: newWeek, year: newYear, message: 'New capital opportunities available! Check the Finances tab.' });
           } else if (proj.type === 'infra') {
             log.unshift({ week: newWeek, year: newYear, message: `${proj.name} completed.` });
           }
@@ -475,6 +546,8 @@ export function gameReducer(state, action) {
         paused: gameOver || pendingNegotiations.length > 0 ? true : state.paused,
         negotiatingEmployeeId: pendingNegotiations.length > 0 ? pendingNegotiations[0] : null,
         pendingNegotiations,
+        capitalOpportunities: [...capitalOpportunities, ...newCapitalOpportunities],
+        activeLoans: activeLoans.filter((l) => l.remainingPayments > 0),
       };
     }
 
@@ -715,6 +788,49 @@ export function gameReducer(state, action) {
       }
 
       return state;
+    }
+
+    case 'ACCEPT_CAPITAL': {
+      const { opportunityId } = action;
+      const opp = state.capitalOpportunities.find((c) => c.id === opportunityId);
+      if (!opp || opp.status !== 'available') return state;
+
+      const newCapitalOpportunities = state.capitalOpportunities.map((c) =>
+        c.id === opportunityId ? { ...c, status: 'accepted' } : c
+      );
+
+      let newActiveLoans = state.activeLoans;
+      if (opp.type === 'loan') {
+        newActiveLoans = [...state.activeLoans, {
+          id: opp.id,
+          name: opp.name,
+          principal: opp.amount,
+          interestRate: opp.interestRate,
+          monthlyPayment: opp.monthlyPayment,
+          remainingPayments: opp.termMonths,
+          remainingBalance: opp.amount,
+          totalPaid: 0,
+          acceptedWeek: state.totalWeeks,
+        }];
+      }
+
+      const newLog = [
+        {
+          week: state.week, year: state.year,
+          message: opp.type === 'loan'
+            ? `Accepted ${opp.name}: ${state.currency.symbol}${opp.amount.toLocaleString('en-US')} credited`
+            : `Received ${opp.name}: ${state.currency.symbol}${opp.amount.toLocaleString('en-US')} credited`,
+        },
+        ...state.log,
+      ].slice(0, 200);
+
+      return {
+        ...state,
+        bank: state.bank + opp.amount,
+        capitalOpportunities: newCapitalOpportunities,
+        activeLoans: newActiveLoans,
+        log: newLog,
+      };
     }
 
     case 'RESTART': {

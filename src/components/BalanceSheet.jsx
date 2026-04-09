@@ -20,7 +20,7 @@ function Row({ label, years, yearlyData, weekData, indent, bold, color, sym }) {
   );
 }
 
-export default function BalanceSheet({ state }) {
+export default function BalanceSheet({ state, dispatch }) {
   const sym = state.currency.symbol;
   const fmt = (v) => formatCR(v, sym);
 
@@ -57,8 +57,11 @@ export default function BalanceSheet({ state }) {
     let total = exp.salaries || 0;
     for (const v of Object.values(exp.devProjects || {})) total += v;
     for (const v of Object.values(exp.productInfra || {})) total += v;
+    total += exp.loanRepayments || 0;
     return total;
   };
+
+  const hasLoanRepayments = years.some((y) => (getExp(y).loanRepayments || 0) > 0) || state.activeLoans.length > 0;
   const totalRevForYear = (y) => {
     const rev = getRev(y);
     let total = 0;
@@ -159,6 +162,17 @@ export default function BalanceSheet({ state }) {
                 sym={sym}
               />
             ))}
+            {hasLoanRepayments && (
+              <Row
+                label="Loan Repayments"
+                years={years}
+                yearlyData={(y) => getExp(y).loanRepayments || 0}
+                weekData={0}
+                indent
+                color="text-accent-red"
+                sym={sym}
+              />
+            )}
             <Row
               label="Total Expenses"
               years={years}
@@ -199,6 +213,93 @@ export default function BalanceSheet({ state }) {
             </tr>
           </tbody>
         </table>
+      </div>
+
+      {/* Raising Capital */}
+      <div className="t-bg-card t-border border overflow-hidden mt-3">
+        <div className="px-3 py-1.5 t-border border-b">
+          <span className="text-xs t-text-secondary font-semibold">Raising Capital</span>
+        </div>
+        <div className="p-3">
+          {/* Available opportunities */}
+          {state.capitalOpportunities.filter((c) => c.status === 'available').length > 0 ? (
+            <div className="flex flex-col gap-2">
+              {state.capitalOpportunities.filter((c) => c.status === 'available').map((opp) => {
+                const weeksLeft = opp.expiresAtWeek - state.totalWeeks;
+                const monthsLeft = Math.ceil(weeksLeft / 4);
+                return (
+                  <div key={opp.id} className="t-border border p-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div>
+                      <div className="font-semibold t-text text-sm">{opp.name}</div>
+                      <div className="text-xs t-text-secondary">{opp.description}</div>
+                      <div className="text-xs t-text-muted mt-1">
+                        Amount: <span className="font-mono text-accent-green">{fmt(opp.amount)}</span>
+                        {opp.type === 'loan' && (
+                          <span> — EMI: <span className="font-mono text-accent-red">{fmt(opp.monthlyPayment)}</span>/mo for {opp.termMonths} months</span>
+                        )}
+                      </div>
+                      <div className="text-xs t-text-muted">
+                        Expires in {monthsLeft} month{monthsLeft !== 1 ? 's' : ''}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => dispatch({ type: 'ACCEPT_CAPITAL', opportunityId: opp.id })}
+                      className="px-3 py-1 text-sm font-semibold shrink-0 transition-colors"
+                      style={{ background: '#00d26a', color: '#000' }}
+                    >
+                      {opp.type === 'loan' ? 'Take Loan' : 'Accept Grant'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-xs t-text-muted">
+              {state.capitalOpportunities.length === 0
+                ? 'No capital opportunities yet. Ship your MVP to unlock funding options.'
+                : 'No opportunities available right now.'}
+            </div>
+          )}
+
+          {/* Active loans */}
+          {state.activeLoans.length > 0 && (
+            <div className="mt-3">
+              <div className="text-xs t-text-secondary font-semibold mb-2">Active Loans</div>
+              <table className="sheet w-full text-sm">
+                <thead>
+                  <tr>
+                    <th className="text-left">Loan</th>
+                    <th className="text-right">EMI</th>
+                    <th className="text-right">Remaining</th>
+                    <th className="text-right">Payments Left</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {state.activeLoans.map((loan) => (
+                    <tr key={loan.id}>
+                      <td className="t-text-secondary">{loan.name}</td>
+                      <td className="text-right font-mono text-accent-red">{fmt(loan.monthlyPayment)}/mo</td>
+                      <td className="text-right font-mono">{fmt(loan.remainingBalance)}</td>
+                      <td className="text-right font-mono t-text-muted">{loan.remainingPayments}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Past accepted */}
+          {state.capitalOpportunities.filter((c) => c.status === 'accepted').length > 0 && (
+            <div className="mt-3">
+              <div className="text-xs t-text-secondary font-semibold mb-1">Accepted</div>
+              {state.capitalOpportunities.filter((c) => c.status === 'accepted').map((opp) => (
+                <div key={opp.id} className="text-xs t-text-muted py-0.5">
+                  {opp.name} — {fmt(opp.amount)} {opp.type === 'grant' ? '(grant)' : '(loan)'}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
