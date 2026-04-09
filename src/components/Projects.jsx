@@ -112,7 +112,7 @@ function ProjectCard({ project, state, dispatch, unassigned }) {
             {isComplete ? 'Complete' : 'Active'}
           </span>
         </div>
-        <div className="flex items-center gap-4 text-sm">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-sm">
           {!isComplete && (
             <>
               <span className="t-text-secondary">

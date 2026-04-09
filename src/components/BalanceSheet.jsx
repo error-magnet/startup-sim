@@ -265,7 +265,8 @@ export default function BalanceSheet({ state, dispatch }) {
           {state.activeLoans.length > 0 && (
             <div className="mt-3">
               <div className="text-xs t-text-secondary font-semibold mb-2">Active Loans</div>
-              <table className="sheet w-full text-sm">
+              <div className="overflow-x-auto">
+              <table className="sheet w-full text-sm" style={{ minWidth: '400px' }}>
                 <thead>
                   <tr>
                     <th className="text-left">Loan</th>
@@ -285,6 +286,7 @@ export default function BalanceSheet({ state, dispatch }) {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
 

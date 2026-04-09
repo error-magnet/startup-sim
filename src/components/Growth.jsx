@@ -34,7 +34,7 @@ function InfoTooltip({ children }) {
         className="w-4 h-4 inline-flex items-center justify-center text-xs t-text-muted t-border border rounded-full hover:t-text transition-colors cursor-help"
       >?</button>
       {show && (
-        <div className="absolute left-6 top-0 z-20 t-bg-card t-border border shadow-lg p-3 min-w-[220px] text-sm">
+        <div className="absolute left-6 top-0 sm:left-6 z-20 t-bg-card t-border border shadow-lg p-3 min-w-[220px] max-w-[calc(100vw-3rem)] text-sm">
           {children}
         </div>
       )}
@@ -69,8 +69,8 @@ function ProductPanel({ product, dispatch, sym, devProjects }) {
   return (
     <div className="flex flex-col gap-3">
       {/* Product header */}
-      <div className="t-bg-card t-border border px-3 py-2 flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="t-bg-card t-border border px-3 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="font-semibold t-text">{product.name}</span>
           <span className="text-xs t-text-muted">({product.type})</span>
           {versionName && (

@@ -3,10 +3,10 @@ import { weeksRemaining, getProductUserStats } from '../reducer';
 
 function MetricCard({ label, value, sub, color = 'var(--txt-primary)' }) {
   return (
-    <div className="t-bg-card t-border border p-3 flex flex-col gap-0.5">
+    <div className="t-bg-card t-border border p-3 flex flex-col gap-0.5 overflow-hidden">
       <span className="text-xs t-text-secondary">{label}</span>
-      <span className="font-mono text-lg font-semibold" style={{ color }}>{value}</span>
-      {sub && <span className="text-xs t-text-muted font-mono">{sub}</span>}
+      <span className="font-mono text-base sm:text-lg font-semibold truncate" style={{ color }}>{value}</span>
+      {sub && <span className="text-xs t-text-muted font-mono break-words">{sub}</span>}
     </div>
   );
 }

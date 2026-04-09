@@ -6,7 +6,6 @@ import HRMS from './components/HRMS';
 import BalanceSheet from './components/BalanceSheet';
 import Projects from './components/Projects';
 import Growth from './components/Growth';
-import Admin from './components/Admin';
 
 const TABS = [
   { key: 'dashboard', label: 'Dashboard' },
@@ -14,7 +13,6 @@ const TABS = [
   { key: 'hrms', label: 'HRMS' },
   { key: 'growth', label: 'Growth' },
   { key: 'balance', label: 'Finances' },
-  { key: 'admin', label: 'Admin' },
 ];
 
 function CompanyName({ name, dispatch }) {
@@ -89,7 +87,7 @@ function NegotiationModal({ employee, dispatch, sym }) {
         </table>
         <div className="flex items-center gap-2 text-sm">
           <span className="t-text-secondary">Offer:</span>
-          <span className="t-text-muted">CR</span>
+          <span className="t-text-muted">{sym}</span>
           <input
             value={offerSalary}
             onChange={(e) => setOfferSalary(e.target.value)}
@@ -287,7 +285,7 @@ export default function App() {
 
       {/* Notifications */}
       {state.notifications.length > 0 && (
-        <div className="fixed bottom-4 right-4 z-40 flex flex-col gap-2 max-w-sm w-full sm:w-auto">
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto z-40 flex flex-col gap-2 max-w-sm">
           {state.notifications.map((notif) => (
             <div
               key={notif.id}
@@ -322,7 +320,6 @@ export default function App() {
         {state.activeTab === 'projects' && <Projects state={state} dispatch={dispatch} />}
         {state.activeTab === 'hrms' && <HRMS state={state} dispatch={dispatch} />}
         {state.activeTab === 'balance' && <BalanceSheet state={state} dispatch={dispatch} />}
-        {state.activeTab === 'admin' && <Admin state={state} dispatch={dispatch} />}
       </div>
 
       {/* Negotiation modal */}
