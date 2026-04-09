@@ -1,5 +1,5 @@
 const VOWELS = 'aeiou';
-const CONSONANTS = 'bcdfghjklmnpqrstvwxyz';
+const CONSONANTS = 'bcdfghjklmnprstvwyz';
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 export function formatCR(amount, symbol = '₹') {

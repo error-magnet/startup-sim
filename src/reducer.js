@@ -48,9 +48,10 @@ function makeAppifyMVP() {
           devCostPerMonth: 50000,
           totalWork: 48,
           baseHeadcount: 2,
+          minHeadcount: 1,
           upgradeProduct: {
             setVersion: 'v1',
-            configOverrides: { infraBaseCost: 75000, basePrice: 1000 },
+            configOverrides: { basePrice: 1000 },
             configDeltas: { baseRetentionRate: 0.10 },
           },
         }},
@@ -98,7 +99,7 @@ function createLiveProduct(productId, name, type, launchedWeek) {
 }
 
 function createUpgradeProject(productId, productName, args, createdWeek) {
-  const { version, devCostPerMonth = 50000, totalWork = 48, baseHeadcount = 1, upgradeProduct, spawnProjects, notifications } = args;
+  const { version, devCostPerMonth = 50000, totalWork = 48, baseHeadcount = 1, minHeadcount, upgradeProduct, spawnProjects, notifications } = args;
   const projId = `${productId}-${version}`;
   return {
     id: projId,
@@ -120,6 +121,7 @@ function createUpgradeProject(productId, productName, args, createdWeek) {
         workCompleted: 0,
         status: 'Not Started',
         baseHeadcount,
+        ...(minHeadcount ? { minHeadcount } : {}),
       },
     ],
     onComplete: {
