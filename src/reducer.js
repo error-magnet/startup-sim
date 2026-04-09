@@ -35,6 +35,31 @@ function makeAppifyMVP() {
         baseHeadcount: 1,
       },
     ],
+    onComplete: {
+      createProduct: {
+        id: 'appify',
+        name: 'Appify',
+        type: 'SaaS',
+      },
+      spawnProjects: [
+        { factory: 'infra', productId: 'appify', productName: 'Appify', args: { yearNum: 1 } },
+        { factory: 'upgrade', productId: 'appify', productName: 'Appify', args: {
+          version: 'v1',
+          devCostPerMonth: 50000,
+          totalWork: 48,
+          baseHeadcount: 1,
+          upgradeProduct: {
+            setVersion: 'v1',
+            configOverrides: { infraBaseCost: 75000 },
+            configDeltas: { baseRetentionRate: 0.10 },
+          },
+        }},
+      ],
+      capitalTrigger: 'mvp',
+      notifications: [
+        { message: 'Capital opportunities available!', tab: 'balance' },
+      ],
+    },
   };
 }
 
@@ -67,6 +92,43 @@ function createLiveProduct(productId, name, type, launchedWeek) {
     cohorts: [],
     financials: { totalRevenue: 0, totalInfraCost: 0 },
     lastMonthStats: { signups: 0, converted: 0, churned: 0 },
+    currentVersion: 'mvp',
+    infraStaffed: false,
+  };
+}
+
+function createUpgradeProject(productId, productName, args, createdWeek) {
+  const { version, devCostPerMonth = 50000, totalWork = 48, baseHeadcount = 1, upgradeProduct, spawnProjects, notifications } = args;
+  const projId = `${productId}-${version}`;
+  return {
+    id: projId,
+    name: `${productName} ${version.toUpperCase()}`,
+    productId,
+    type: 'upgrade',
+    status: 'Active',
+    devCostPerMonth,
+    totalDevSpend: 0,
+    createdWeek,
+    completedWeek: null,
+    epics: [
+      {
+        id: `${projId}-main`,
+        name: `${productName} ${version.toUpperCase()} Development`,
+        projectId: projId,
+        assignedEmployeeIds: [],
+        totalWork,
+        workCompleted: 0,
+        status: 'Not Started',
+        baseHeadcount,
+      },
+    ],
+    onComplete: {
+      upgradeProduct,
+      spawnProjects: spawnProjects || [],
+      notifications: notifications || [
+        { message: `${productName} ${version.toUpperCase()} is live!`, tab: 'growth' },
+      ],
+    },
   };
 }
 
@@ -374,17 +436,64 @@ export function gameReducer(state, action) {
           proj.status = 'Complete';
           proj.completedWeek = newTotalWeeks;
 
-          if (proj.type === 'mvp') {
-            const productName = proj.productId === 'appify' ? 'Appify' : proj.name.replace(' MVP', '');
-            products.push(createLiveProduct(proj.productId, productName, 'SaaS', newTotalWeeks));
-            newDevProjectsToAdd.push(createInfraProject(proj.productId, productName, 1, newTotalWeeks));
-            log.unshift({ week: newWeek, year: newYear, message: `${proj.name} shipped! Product is now live.` });
-            log.unshift({ week: newWeek, year: newYear, message: `${productName} Infra Y1 project created. Assign engineers.` });
-            // Trigger capital opportunities
-            newCapitalOpportunities.push(...createMVPCapitalOpportunities(newTotalWeeks));
-            log.unshift({ week: newWeek, year: newYear, message: 'New capital opportunities available! Check the Finances tab.' });
-            newNotifications.push({ id: notifId++, message: 'Capital opportunities available!', tab: 'balance' });
-          } else if (proj.type === 'infra') {
+          const oc = proj.onComplete;
+          if (oc) {
+            log.unshift({ week: newWeek, year: newYear, message: `${proj.name} shipped!` });
+
+            // Create a new product
+            if (oc.createProduct) {
+              const cp = oc.createProduct;
+              products.push(createLiveProduct(cp.id, cp.name, cp.type || 'SaaS', newTotalWeeks));
+              log.unshift({ week: newWeek, year: newYear, message: `${cp.name} is now live.` });
+            }
+
+            // Upgrade an existing product
+            if (oc.upgradeProduct) {
+              const up = oc.upgradeProduct;
+              const product = products.find((p) => p.id === proj.productId);
+              if (product) {
+                if (up.setVersion) product.currentVersion = up.setVersion;
+                if (up.configOverrides) {
+                  for (const [k, v] of Object.entries(up.configOverrides)) product.config[k] = v;
+                }
+                if (up.configDeltas) {
+                  for (const [k, d] of Object.entries(up.configDeltas)) {
+                    product.config[k] = Math.max(0, Math.min(0.95, (product.config[k] || 0) + d));
+                  }
+                }
+              }
+            }
+
+            // Spawn follow-up projects
+            if (oc.spawnProjects) {
+              for (const sp of oc.spawnProjects) {
+                let newProj;
+                if (sp.factory === 'infra') {
+                  newProj = createInfraProject(sp.productId, sp.productName, sp.args.yearNum, newTotalWeeks);
+                } else if (sp.factory === 'upgrade') {
+                  newProj = createUpgradeProject(sp.productId, sp.productName, sp.args, newTotalWeeks);
+                }
+                if (newProj) {
+                  newDevProjectsToAdd.push(newProj);
+                  log.unshift({ week: newWeek, year: newYear, message: `${newProj.name} project created. Assign engineers.` });
+                }
+              }
+            }
+
+            // Capital opportunities
+            if (oc.capitalTrigger === 'mvp') {
+              newCapitalOpportunities.push(...createMVPCapitalOpportunities(newTotalWeeks));
+              log.unshift({ week: newWeek, year: newYear, message: 'New capital opportunities available! Check the Finances tab.' });
+            }
+
+            // Notifications
+            if (oc.notifications) {
+              for (const n of oc.notifications) {
+                newNotifications.push({ id: notifId++, message: n.message, tab: n.tab });
+              }
+            }
+          } else {
+            // Projects without onComplete (e.g. infra)
             log.unshift({ week: newWeek, year: newYear, message: `${proj.name} completed.` });
           }
         }
@@ -402,6 +511,15 @@ export function gameReducer(state, action) {
         const cfg = product.config;
         const weeksSinceLaunch = newTotalWeeks - product.launchedWeek;
 
+        // Check if infra is staffed — product is paused if no active infra project has assigned engineers
+        const activeInfra = devProjects.find(
+          (p) => p.productId === product.id && p.type === 'infra' && p.status === 'Active'
+        );
+        const infraStaffed = activeInfra && activeInfra.epics.some(
+          (e) => e.status !== 'Complete' && e.assignedEmployeeIds.length > 0
+        );
+        product.infraStaffed = infraStaffed;
+
         // Check if new annual infra project needed
         if (weeksSinceLaunch > 0 && weeksSinceLaunch % 52 === 0) {
           const existingInfra = devProjects.filter((p) => p.productId === product.id && p.type === 'infra');
@@ -410,6 +528,8 @@ export function gameReducer(state, action) {
           devProjects.push(newInfra);
           log.unshift({ week: newWeek, year: newYear, message: `${product.name} Infra Y${yearNum} project created. Assign engineers.` });
         }
+
+        if (!infraStaffed) continue;
 
         // Monthly cycle (every 4 weeks from launch)
         if (weeksSinceLaunch > 0 && weeksSinceLaunch % 4 === 0) {

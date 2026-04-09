@@ -55,9 +55,16 @@ function ProductPanel({ product, dispatch, sym, devProjects }) {
   const lm = product.lastMonthStats;
   const netChange = lm.converted - lm.churned;
 
-  // Find source MVP project name
-  const mvpProject = devProjects.find((p) => p.productId === product.id && p.type === 'mvp');
-  const versionName = mvpProject ? mvpProject.name : null;
+  // Find current version project name
+  const versionProject = devProjects.find((p) => {
+    if (p.productId !== product.id) return false;
+    if (p.type === 'mvp' && product.currentVersion === 'mvp') return true;
+    if (p.type === 'upgrade' && p.onComplete?.upgradeProduct?.setVersion === product.currentVersion) return true;
+    return false;
+  }) || devProjects.find((p) => p.productId === product.id && p.type === 'mvp');
+  const versionName = versionProject
+    ? versionProject.name
+    : `${product.name} ${product.currentVersion?.toUpperCase() || 'MVP'}`;
 
   return (
     <div className="flex flex-col gap-3">
@@ -76,9 +83,17 @@ function ProductPanel({ product, dispatch, sym, devProjects }) {
               Launched Y{Math.ceil(product.launchedWeek / 52)} W{((product.launchedWeek - 1) % 52) + 1}
             </span>
           )}
-          <span className="text-accent-green">Live</span>
+          <span className={product.infraStaffed ? 'text-accent-green' : 'text-accent-red'}>
+            {product.infraStaffed ? 'Live' : 'Paused'}
+          </span>
         </div>
       </div>
+
+      {!product.infraStaffed && (
+        <div className="bg-accent-red/10 border border-accent-red/30 px-3 py-2 text-sm text-accent-red">
+          Product is paused — assign an engineer to the infra project to resume operations.
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* Pricing */}
